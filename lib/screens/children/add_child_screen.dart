@@ -1,122 +1,129 @@
 import 'package:flutter/material.dart';
-import 'package:appwrite/appwrite.dart';
+import 'package:intl/intl.dart'; // Add this to pubspec.yaml if missing
+import '../../services/child_service.dart';
+import '../../services/visit_service.dart';
+import '../../services/local_storage_service.dart';
+import '../../utils/constants.dart';
+import '../visits/baseline_visit_screen.dart';
+import '../../services/local_storage_service.dart';
 
 class AddChildScreen extends StatefulWidget {
-  const AddChildScreen({super.key});
+  final String projectId;
+  final String projectName;
+  const AddChildScreen({super.key, required this.projectId, required this.projectName});
 
   @override
   State<AddChildScreen> createState() => _AddChildScreenState();
 }
 
 class _AddChildScreenState extends State<AddChildScreen> {
-  // 1. SETUP APPWRITE
-  final String databaseId = '696a60cf00151d14bf35';  // Ensure this matches your DB ID
-  final String collectionId = 'children';  // As per your screenshot
-  late Client client;
-  late Databases databases;
-
-  // 2. FORM CONTROLLERS
-  final _nameController = TextEditingController();
-  final _ageController = TextEditingController();
-  final _guardianController = TextEditingController();
-  final _locationController = TextEditingController();
+  // Controllers
+  final _nameCtrl = TextEditingController();
+  final _guardianCtrl = TextEditingController();
+  final _contactCtrl = TextEditingController();
+  
+  String _gender = 'female';
+  DateTime? _dob;
   bool _isLoading = false;
 
-  @override
-  void initState() {
-    super.initState();
-    client = Client()
-        .setEndpoint('https://cloud.appwrite.io/v1')
-        .setProject('696a5e940026621a01ee'); // Your Project ID
-    databases = Databases(client);
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2010),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) setState(() => _dob = picked);
   }
 
-  // 3. SAVE FUNCTION
-  Future<void> _saveChild() async {
-    if (_nameController.text.isEmpty || _ageController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Name and Age are required')),
-      );
+  void _saveAndStartBaseline() async {
+    if (_nameCtrl.text.isEmpty || _dob == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Name and DOB are required")));
       return;
     }
 
     setState(() => _isLoading = true);
-
+    
     try {
-      await databases.createDocument(
-        databaseId: databaseId,
-        collectionId: collectionId,
-        documentId: ID.unique(), // Auto-generate ID
-        data: {
-          'name': _nameController.text,
-          'age': int.parse(_ageController.text), // Convert text to number
-          'guardian_name': _guardianController.text,
-          'location': _locationController.text,
-          'tags': [], // Empty list for now
-        },
+      // 1. Create Child (Using Service)
+      final childId = await ChildService.I.createChild(
+        projectId: widget.projectId,
+        name: _nameCtrl.text,
+        gender: _gender,
+        dob: _dob!,
+        guardianName: _guardianCtrl.text,
+        guardianContact: _contactCtrl.text,
       );
 
+      // 2. Auto-Create Baseline Visit
+      // Ensure 'fw_id' is saved in LocalStorage during login
+      final fwId = LocalStorageService.I.fieldWorkerId ?? 'unknown_worker';
+      
+      final visitId = await VisitService.I.createVisit(
+        childId: childId,
+        phase: Constants.phaseBaseline,
+        fwId: fwId,
+      );
+
+      // 3. Navigate to Dynamic Survey
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Beneficiary Added Successfully!')),
-        );
-        Navigator.pop(context, true); // Go back and refresh list
+        Navigator.pushReplacement(context, MaterialPageRoute(
+          builder: (_) => BaselineVisitScreen(
+            visitId: visitId, 
+            projectId: widget.projectId, 
+            childName: _nameCtrl.text
+          )
+        ));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+      setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Add Beneficiary"),
-        backgroundColor: const Color(0xFF26A69A),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              TextField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: "Child Name", border: OutlineInputBorder()),
+      appBar: AppBar(title: const Text("New Child Registration"), backgroundColor: const Color(0xFF26A69A)),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            TextField(controller: _nameCtrl, decoration: const InputDecoration(labelText: "Child Name")),
+            const SizedBox(height: 12),
+            
+            // Gender Dropdown
+            DropdownButtonFormField(
+              value: _gender,
+              items: ['male', 'female', 'other'].map((e) => DropdownMenuItem(value: e, child: Text(e.toUpperCase()))).toList(),
+              onChanged: (v) => setState(() => _gender = v!),
+              decoration: const InputDecoration(labelText: "Gender"),
+            ),
+            const SizedBox(height: 12),
+            
+            // Date Picker
+            ListTile(
+              title: Text(_dob == null ? "Select Date of Birth" : DateFormat('yyyy-MM-dd').format(_dob!)),
+              trailing: const Icon(Icons.calendar_today),
+              tileColor: Colors.grey[200],
+              onTap: _pickDate,
+            ),
+            const SizedBox(height: 12),
+            
+            TextField(controller: _guardianCtrl, decoration: const InputDecoration(labelText: "Guardian Name")),
+            const SizedBox(height: 12),
+            TextField(controller: _contactCtrl, decoration: const InputDecoration(labelText: "Guardian Phone"), keyboardType: TextInputType.phone),
+            const SizedBox(height: 24),
+            
+            SizedBox(
+              width: double.infinity, height: 50,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF26A69A)),
+                onPressed: _isLoading ? null : _saveAndStartBaseline,
+                child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text("SAVE & START BASELINE", style: TextStyle(color: Colors.white)),
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _ageController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: "Age", border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _guardianController,
-                decoration: const InputDecoration(labelText: "Guardian Name", border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _locationController,
-                decoration: const InputDecoration(labelText: "Location / Address", border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF26A69A)),
-                  onPressed: _isLoading ? null : _saveChild,
-                  child: _isLoading 
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("SAVE BENEFICIARY", style: TextStyle(color: Colors.white, fontSize: 16)),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

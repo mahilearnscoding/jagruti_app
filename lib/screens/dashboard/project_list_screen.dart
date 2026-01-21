@@ -108,8 +108,8 @@ class ProjectListScreen extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (context) => ChildListScreen(
+                      projectId: project['id'],
                       projectName: project['title'],
-                      location: project['location'],
                     ),
                   ),
                 );

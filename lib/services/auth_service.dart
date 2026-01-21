@@ -1,9 +1,10 @@
 import 'package:appwrite/appwrite.dart';
 
 class AuthService {
+  // Ensure this ID matches Constants.appwriteProjectId exactly
   final Client client = Client()
       .setEndpoint('https://cloud.appwrite.io/v1')
-      .setProject('696a60cf00151d14bf35'); // Your Project ID
+      .setProject('696a5e940026621a01ee'); 
 
   late final Account account;
 
@@ -11,27 +12,31 @@ class AuthService {
     account = Account(client);
   }
 
-  // FAKE SEND OTP (Bypasses the limit error)
+  // This is the method the compiler is looking for!
   Future<void> sendOtp(String phoneNumber) async {
-    // We don't actually call Appwrite here anymore.
-    // We just pretend to wait for 1 second.
+    // We simulate a network delay for the dummy flow
+    print("Simulating OTP send to: $phoneNumber");
     await Future.delayed(const Duration(seconds: 1));
   }
 
-  // FAKE VERIFY OTP (Actually does Anonymous Login)
+  // FAKE VERIFY OTP (Creates the necessary Session)
   Future<void> verifyOtp(String otp) async {
-    // We ignore the OTP code.
-    // Instead, we create an "Anonymous Session" so the app works.
     try {
+      // This creates the "Key" that unlocks the database
       await account.createAnonymousSession();
+      print("✅ Session created successfully!");
     } catch (e) {
-      // If we are already logged in, just continue
-      print("Already logged in or error: $e");
+      // If session already exists, we just move on
+      print("Session status: $e");
     }
   }
 
   Future<void> logout() async {
-    await account.deleteSession(sessionId: 'current');
+    try {
+      await account.deleteSession(sessionId: 'current');
+    } catch (e) {
+      print("Logout error: $e");
+    }
   }
 }
 /*import 'package:appwrite/appwrite.dart';

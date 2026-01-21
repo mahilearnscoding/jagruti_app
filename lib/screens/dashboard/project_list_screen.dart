@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../services/project_service.dart';
+import 'package:appwrite/appwrite.dart';
+import 'package:appwrite/models.dart' as models;
 import '../children/child_list_screen.dart';
 
 class ProjectListScreen extends StatefulWidget {
@@ -12,32 +13,77 @@ class ProjectListScreen extends StatefulWidget {
 class _ProjectListScreenState extends State<ProjectListScreen> {
   bool _isLoading = true;
   List<Map<String, dynamic>> _projects = [];
+  String _debugMessage = "Initializing...";
+
+  // --- 1. HARDCODED CONFIGURATION (Matches your screenshots) ---
+  final String projectId = '696a5e940026621a01ee'; // From your screenshot
+  final String databaseId = '696a60cf00151d14bf35'; // From your screenshot
+  final String collectionId = 'projects'; // From the pill in your screenshot
 
   @override
   void initState() {
     super.initState();
-    _loadProjects();
+    _directAppwriteFetch();
   }
 
-  Future<void> _loadProjects() async {
+  // --- 2. DIRECT FETCH FUNCTION (Bypasses Service/Constants) ---
+  Future<void> _directAppwriteFetch() async {
+    setState(() => _debugMessage = "Connecting to Appwrite...");
+
     try {
-      // Fetch data from Service
-      final data = await ProjectService.I.getProjects();
-      
+      // Setup Client manually
+      final client = Client()
+          .setEndpoint('https://cloud.appwrite.io/v1')
+          .setProject(projectId);
+
+      final databases = Databases(client);
+
+      // Fetch Documents
+      final response = await databases.listDocuments(
+        databaseId: databaseId,
+        collectionId: collectionId,
+      );
+
+      // Success!
       if (mounted) {
         setState(() {
-          _projects = data;
-          _isLoading = false; // Stop loading on success
+          _projects = response.documents.map((doc) {
+            final data = doc.data;
+            data['id'] = doc.$id; // Save the ID
+            return data;
+          }).toList();
+          _isLoading = false;
+          _debugMessage = "Found ${response.documents.length} projects";
         });
+
+        // Show a popup on the screen so you can see it worked
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("✅ SUCCESS: Found ${response.documents.length} projects!"),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 4),
+          ),
+        );
       }
     } catch (e) {
-      print("Error loading projects: $e");
+      // Error Handling
+      print("❌ ERROR: $e");
       if (mounted) {
         setState(() {
-          _isLoading = false; // Stop loading even on error
+          _isLoading = false;
+          _debugMessage = "Error: $e";
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: Failed to load projects")),
+        
+        // Show the error on screen
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text("Connection Error"),
+            content: Text("Could not fetch data.\n\nError: $e"),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text("OK"))
+            ],
+          ),
         );
       }
     }
@@ -47,17 +93,46 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Projects'), 
+        title: const Text('My Projects'),
         backgroundColor: const Color(0xFF26A69A),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 20),
+                  Text(_debugMessage), // Shows what the app is doing
+                ],
+              ),
+            )
           : _projects.isEmpty
-              ? const Center(
-                  child: Text(
-                    "No projects assigned.\nContact your administrator.",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey, fontSize: 16),
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.warning_amber_rounded, size: 50, color: Colors.orange),
+                        const SizedBox(height: 10),
+                        const Text(
+                          "No projects found.",
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          "Debug Info:\n$_debugMessage\n\nDB: $databaseId\nCol: $collectionId",
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.grey),
+                        ),
+                        const SizedBox(height: 20),
+                        ElevatedButton(
+                          onPressed: _directAppwriteFetch,
+                          child: const Text("Retry Connection"),
+                        )
+                      ],
+                    ),
                   ),
                 )
               : ListView.builder(
@@ -65,52 +140,17 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                   itemCount: _projects.length,
                   itemBuilder: (context, index) {
                     final project = _projects[index];
-
-                    // --- CRITICAL CRASH FIX ---
-                    // 1. Get ID safely: Checks for '$id' (Appwrite default) OR 'id' OR empty string
-                    final String pId = project['\$id']?.toString() 
-                                    ?? project['id']?.toString() 
-                                    ?? "";
-
-                    // 2. Get Name safely: If null, defaults to "Unnamed Project"
-                    final String pName = project['name']?.toString() ?? "Unnamed Project";
-                    
-                    // 3. Get Description safely
-                    final String pDesc = project['description']?.toString() ?? "Active Program";
+                    final pName = project['name'] ?? "Unnamed Project";
+                    final pDesc = project['description'] ?? "No description";
+                    final pId = project['id'];
 
                     return Card(
-                      elevation: 2,
-                      margin: const EdgeInsets.only(bottom: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        leading: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.teal.shade50,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(Icons.folder, color: Color(0xFF26A69A)),
-                        ),
-                        title: Text(
-                          pName,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                        subtitle: Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(pDesc, maxLines: 2, overflow: TextOverflow.ellipsis),
-                        ),
-                        trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
+                        leading: const Icon(Icons.folder, color: Color(0xFF26A69A)),
+                        title: Text(pName),
+                        subtitle: Text(pDesc),
+                        trailing: const Icon(Icons.arrow_forward_ios, size: 14),
                         onTap: () {
-                          // Prevent navigation if ID is invalid
-                          if (pId.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text("Error: Project ID is missing"))
-                            );
-                            return;
-                          }
-
-                          // Navigate to Child List
                           Navigator.push(
                             context,
                             MaterialPageRoute(

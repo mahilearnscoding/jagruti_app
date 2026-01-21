@@ -2,7 +2,7 @@ class Constants {
   // ⚠️ REPLACE WITH YOUR PROJECT ID
   static const String appwriteEndpoint = 'https://cloud.appwrite.io/v1';
   static const String appwriteProjectId = '696a5e940026621a01ee';
-  static const String databaseId = 'jagruti_db';
+  static const String databaseId = '696a60cf00151d14bf35';
 
   // Collection IDs (Must match Appwrite exactly)
   static const String colProjects = 'projects';

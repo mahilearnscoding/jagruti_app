@@ -1,128 +1,130 @@
 import 'package:flutter/material.dart';
-import '../auth/login_screen.dart';
-import '../children/child_list_screen.dart'; // <--- IMPORTANT: Ensure this import is here
+import '../../services/project_service.dart';
+import '../children/child_list_screen.dart';
 
-class ProjectListScreen extends StatelessWidget {
+class ProjectListScreen extends StatefulWidget {
   const ProjectListScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // DUMMY DATA
-    final List<Map<String, dynamic>> projects = [
-      {
-        "title": "Bangalore Urban Health Initiative",
-        "location": "Bangalore",
-        "count": 45,
-      },
-      {
-        "title": "Mysore Child Nutrition Program",
-        "location": "Mysore",
-        "count": 32,
-      },
-      {
-        "title": "Hubli Community Wellness",
-        "location": "Hubli",
-        "count": 28,
-      },
-      {
-        "title": "Mangalore Coastal Health",
-        "location": "Mangalore",
-        "count": 19,
-      },
-    ];
+  State<ProjectListScreen> createState() => _ProjectListScreenState();
+}
 
+class _ProjectListScreenState extends State<ProjectListScreen> {
+  bool _isLoading = true;
+  List<Map<String, dynamic>> _projects = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProjects();
+  }
+
+  Future<void> _loadProjects() async {
+    try {
+      // Fetch data from Service
+      final data = await ProjectService.I.getProjects();
+      
+      if (mounted) {
+        setState(() {
+          _projects = data;
+          _isLoading = false; // Stop loading on success
+        });
+      }
+    } catch (e) {
+      print("Error loading projects: $e");
+      if (mounted) {
+        setState(() {
+          _isLoading = false; // Stop loading even on error
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: Failed to load projects")),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100], 
       appBar: AppBar(
-        backgroundColor: const Color(0xFF009688),
-        title: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "My Projects", 
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.white)
-            ),
-            Text(
-              "Select a project to view beneficiaries", 
-              style: TextStyle(fontSize: 14, color: Colors.white70)
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
-            onPressed: () {
-              Navigator.pushReplacement(
-                context, 
-                MaterialPageRoute(builder: (context) => const LoginScreen())
-              );
-            },
-          )
-        ],
+        title: const Text('My Projects'), 
+        backgroundColor: const Color(0xFF26A69A),
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: projects.length,
-        itemBuilder: (context, index) {
-          final project = projects[index];
-          return Card(
-            elevation: 2,
-            margin: const EdgeInsets.only(bottom: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: ListTile(
-              contentPadding: const EdgeInsets.all(16),
-              leading: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE0F2F1), // Light Teal background
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.folder_open, color: Color(0xFF009688)),
-              ),
-              title: Text(
-                project['title'],
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 4),
-                  Text(project['location'], style: TextStyle(color: Colors.grey[600])),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(Icons.people_outline, size: 16, color: Colors.grey),
-                      const SizedBox(width: 4),
-                      Text(
-                        "${project['count']} Children", 
-                        style: const TextStyle(fontWeight: FontWeight.w500)
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _projects.isEmpty
+              ? const Center(
+                  child: Text(
+                    "No projects assigned.\nContact your administrator.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey, fontSize: 16),
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: _projects.length,
+                  itemBuilder: (context, index) {
+                    final project = _projects[index];
+
+                    // --- CRITICAL CRASH FIX ---
+                    // 1. Get ID safely: Checks for '$id' (Appwrite default) OR 'id' OR empty string
+                    final String pId = project['\$id']?.toString() 
+                                    ?? project['id']?.toString() 
+                                    ?? "";
+
+                    // 2. Get Name safely: If null, defaults to "Unnamed Project"
+                    final String pName = project['name']?.toString() ?? "Unnamed Project";
+                    
+                    // 3. Get Description safely
+                    final String pDesc = project['description']?.toString() ?? "Active Program";
+
+                    return Card(
+                      elevation: 2,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        leading: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.teal.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.folder, color: Color(0xFF26A69A)),
+                        ),
+                        title: Text(
+                          pName,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(pDesc, maxLines: 2, overflow: TextOverflow.ellipsis),
+                        ),
+                        trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
+                        onTap: () {
+                          // Prevent navigation if ID is invalid
+                          if (pId.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Error: Project ID is missing"))
+                            );
+                            return;
+                          }
+
+                          // Navigate to Child List
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ChildListScreen(
+                                projectId: pId,
+                                projectName: pName,
+                              ),
+                            ),
+                          );
+                        },
                       ),
-                    ],
-                  ),
-                ],
-              ),
-              trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-              // THE NAVIGATION LOGIC
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ChildListScreen(
-                      projectId: project['id'],
-                      projectName: project['title'],
-                    ),
-                  ),
-                );
-              },
-            ),
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF009688),
-        child: const Icon(Icons.help_outline, color: Colors.white),
-        onPressed: () {},
-      ),
+                    );
+                  },
+                ),
     );
   }
 }

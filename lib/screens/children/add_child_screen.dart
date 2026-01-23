@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // Add this to pubspec.yaml if missing
+import 'package:intl/intl.dart';
+
 import '../../services/child_service.dart';
 import '../../services/visit_service.dart';
 import '../../services/local_storage_service.dart';
+import '../../services/sync_manager.dart';
 import '../../utils/constants.dart';
 import '../visits/baseline_visit_screen.dart';
 
@@ -16,11 +18,10 @@ class AddChildScreen extends StatefulWidget {
 }
 
 class _AddChildScreenState extends State<AddChildScreen> {
-  // Controllers
   final _nameCtrl = TextEditingController();
   final _guardianCtrl = TextEditingController();
   final _contactCtrl = TextEditingController();
-  
+
   String _gender = 'female';
   DateTime? _dob;
   bool _isLoading = false;
@@ -37,15 +38,17 @@ class _AddChildScreenState extends State<AddChildScreen> {
 
   void _saveAndStartBaseline() async {
     if (_nameCtrl.text.isEmpty || _dob == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Name and DOB are required")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Name and DOB are required")),
+      );
       return;
     }
 
     setState(() => _isLoading = true);
-    
+
     try {
-      // 1. Create Child (Using Service)
-      final childId = await ChildService.I.createChild(
+      // 1) Create Child LOCAL-FIRST (works offline)
+      final childId = await ChildService.I.createChildLocal(
         projectId: widget.projectId,
         name: _nameCtrl.text,
         gender: _gender,
@@ -54,26 +57,32 @@ class _AddChildScreenState extends State<AddChildScreen> {
         guardianContact: _contactCtrl.text,
       );
 
-      // 2. Auto-Create Baseline Visit
-      // Ensure 'fw_id' is saved in LocalStorage during login
+      // 2) Auto-create Baseline Visit LOCAL-FIRST
       final fwId = LocalStorageService.I.fieldWorkerId ?? 'unknown_worker';
-      
-      final visitId = await VisitService.I.createVisit(
+
+      final visitId = await VisitService.I.createVisitLocal(
         childId: childId,
         phase: Constants.phaseBaseline,
         fwId: fwId,
       );
 
-      // 3. Navigate to Dynamic Survey
-      if (mounted) {
-        Navigator.pushReplacement(context, MaterialPageRoute(
+      // 3) Best-effort sync now (if online)
+      await SyncManager.I.trySync();
+
+      // 4) Navigate to survey (same flow, but now we pass childId too)
+      if (!mounted) return;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
           builder: (_) => BaselineVisitScreen(
-            visitId: visitId, 
-            projectId: widget.projectId, 
-            childName: _nameCtrl.text
-          )
-        ));
-      }
+            visitId: visitId,
+            projectId: widget.projectId,
+            childId: childId,
+            childName: _nameCtrl.text,
+          ),
+        ),
+      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
       setState(() => _isLoading = false);
@@ -83,24 +92,30 @@ class _AddChildScreenState extends State<AddChildScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("New Child Registration"), backgroundColor: const Color(0xFF26A69A)),
+      appBar: AppBar(
+        title: const Text("New Child Registration"),
+        backgroundColor: const Color(0xFF26A69A),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            TextField(controller: _nameCtrl, decoration: const InputDecoration(labelText: "Child Name")),
+            TextField(
+              controller: _nameCtrl,
+              decoration: const InputDecoration(labelText: "Child Name"),
+            ),
             const SizedBox(height: 12),
-            
-            // Gender Dropdown
+
             DropdownButtonFormField(
               value: _gender,
-              items: ['male', 'female', 'other'].map((e) => DropdownMenuItem(value: e, child: Text(e.toUpperCase()))).toList(),
+              items: ['male', 'female', 'other']
+                  .map((e) => DropdownMenuItem(value: e, child: Text(e.toUpperCase())))
+                  .toList(),
               onChanged: (v) => setState(() => _gender = v!),
               decoration: const InputDecoration(labelText: "Gender"),
             ),
             const SizedBox(height: 12),
-            
-            // Date Picker
+
             ListTile(
               title: Text(_dob == null ? "Select Date of Birth" : DateFormat('yyyy-MM-dd').format(_dob!)),
               trailing: const Icon(Icons.calendar_today),
@@ -108,18 +123,32 @@ class _AddChildScreenState extends State<AddChildScreen> {
               onTap: _pickDate,
             ),
             const SizedBox(height: 12),
-            
-            TextField(controller: _guardianCtrl, decoration: const InputDecoration(labelText: "Guardian Name")),
+
+            TextField(
+              controller: _guardianCtrl,
+              decoration: const InputDecoration(labelText: "Guardian Name"),
+            ),
             const SizedBox(height: 12),
-            TextField(controller: _contactCtrl, decoration: const InputDecoration(labelText: "Guardian Phone"), keyboardType: TextInputType.phone),
+
+            TextField(
+              controller: _contactCtrl,
+              decoration: const InputDecoration(labelText: "Guardian Phone"),
+              keyboardType: TextInputType.phone,
+            ),
             const SizedBox(height: 24),
-            
+
             SizedBox(
-              width: double.infinity, height: 50,
+              width: double.infinity,
+              height: 50,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF26A69A)),
                 onPressed: _isLoading ? null : _saveAndStartBaseline,
-                child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text("SAVE & START BASELINE", style: TextStyle(color: Colors.white)),
+                child: _isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
+                        "SAVE & START BASELINE",
+                        style: TextStyle(color: Colors.white),
+                      ),
               ),
             ),
           ],

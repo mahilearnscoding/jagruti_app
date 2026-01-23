@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../auth/login_screen.dart'; // Make sure this import points to your login file
+
+import '../auth/login_screen.dart';
+import '../../services/sync_manager.dart'; // <-- adjust path if needed
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -13,7 +15,17 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    // THE TIMER: Wait 3 seconds, then go to Login
+
+    // Try syncing queued offline data (won't do anything if offline)
+    Future.microtask(() async {
+      try {
+        await SyncManager.I.trySync();
+      } catch (_) {
+        // ignore sync errors on splash
+      }
+    });
+
+    // Wait 3 seconds, then go to Login
     Timer(const Duration(seconds: 3), () {
       Navigator.pushReplacement(
         context,
@@ -24,26 +36,25 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    final primary = Theme.of(context).colorScheme.primary;
+
+    return Scaffold(
       backgroundColor: Colors.white,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // If you have an image, replace Icon with Image.asset(...)
-            Icon(Icons.volunteer_activism, size: 100, color: Colors.blueAccent),
-            SizedBox(height: 20),
             Text(
               "JAGRUTI",
               style: TextStyle(
-                fontSize: 32,
+                fontSize: 34,
                 fontWeight: FontWeight.bold,
-                color: Colors.blueAccent,
+                color: primary, // matches app color
                 letterSpacing: 2,
               ),
             ),
-            SizedBox(height: 10),
-            CircularProgressIndicator(), // Shows the user something is loading
+            const SizedBox(height: 18),
+            const CircularProgressIndicator(),
           ],
         ),
       ),

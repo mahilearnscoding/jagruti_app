@@ -63,7 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
             const Icon(Icons.lock_open, size: 80, color: Colors.blue),
             const SizedBox(height: 30),
             Text(
-              _isOtpSent ? "Enter Magic Code" : "Dev Login",
+              _isOtpSent ? "Enter OTP" : "Dev Login",
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
@@ -73,13 +73,13 @@ class _LoginScreenState extends State<LoginScreen> {
               TextField(
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(labelText: "Phone Number (Any)"),
+                decoration: const InputDecoration(labelText: "Phone Number"),
               )
             else
               TextField(
                 controller: _otpController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: "OTP (Any)"),
+                decoration: const InputDecoration(labelText: "OTP"),
               ),
 
             const SizedBox(height: 20),

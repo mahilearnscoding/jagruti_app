@@ -2,7 +2,6 @@ import 'package:appwrite/appwrite.dart';
 import '../utils/constants.dart';
 import 'appwrite_service.dart';
 
-// 1. Define the QuestionBundle class
 class QuestionBundle {
   final String questionId;
   final String text;
@@ -19,18 +18,15 @@ class QuestionBundle {
   });
 }
 
-// 2. Define the QuestionService class
 class QuestionService {
   QuestionService._();
   static final QuestionService I = QuestionService._();
 
   Future<List<QuestionBundle>> getBaselineQuestions(String projectId) async {
     final aw = AppwriteService.I;
-
-    // ✅ IMPORTANT: ensure we have a session (anonymous ok)
     await aw.ensureSession();
 
-    // Get the list of questions for this project
+    // get the list of questions for this project
     final pqRes = await aw.list(
       collectionId: Constants.colProjectQuestions,
       queries: [
@@ -42,18 +38,17 @@ class QuestionService {
 
     List<QuestionBundle> bundles = [];
 
-    // Loop through and get details
     for (var doc in pqRes.documents) {
       final qId = aw.relId(doc.data['question']);
       if (qId == null) continue;
 
-      // Get Question Text
+      // get Question Text
       final qDoc = await aw.get(
         collectionId: Constants.colQuestions,
         documentId: qId,
       );
 
-      // Get Options (if any)
+      // get Options (if any)
       List<Map<String, String>> options = [];
       String type = (qDoc.data['answer_type'] ?? 'text').toString();
 

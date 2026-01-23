@@ -12,17 +12,16 @@ class ProjectService {
         collectionId: Constants.colProjects,
       );
 
-      // Convert documents to a nice list of data
+      //convert documents to a nice list of data
       return response.documents.map((doc) {
         final data = doc.data;
-        // Inject the ID into the data map so the UI can use it
+        // inject the ID into the data map so the UI can use it
         data['id'] = doc.$id; 
         return data;
       }).toList();
       
     } catch (e) {
       print("Error fetching projects: $e");
-      // Return empty list instead of crashing
       return [];
     }
   }

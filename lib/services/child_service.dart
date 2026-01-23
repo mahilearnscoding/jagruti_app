@@ -78,7 +78,7 @@ class ChildService {
     required String guardianName,
     required String guardianContact,
   }) async {
-    final childId = const Uuid().v4();
+    final childId =  Uuid().v4();
     final box = Hive.box('children_local');
 
     final data = <String, dynamic>{
@@ -95,10 +95,10 @@ class ChildService {
       'synced': false,
     };
 
-    // 1) Save locally
+    // save locally
     box.put(childId, data);
 
-    // 2) Enqueue sync job (idempotent docId = childId)
+    //enqueue sync job
     SyncQueueService.I.enqueue({
       'type': jobCreateChild,
       'childId': childId,
@@ -116,7 +116,7 @@ class ChildService {
     return childId;
   }
 
-  /// Mark baseline submitted locally and queue server update
+  //mark baseline submitted locally and queue server update
   Future<void> markBaselineSubmittedLocal({
     required String childId,
     required String visitId,

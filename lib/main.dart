@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:appwrite/appwrite.dart';
+
 import 'services/appwrite_service.dart';
 import 'utils/constants.dart';
-
+import 'utils/kannada_baseline_seeder.dart';
 import 'screens/splash/splash_screen.dart';
-import 'services/appwrite_service.dart'; // <-- change path if yours is different
+
 Future<void> debugQuestionCounts(String projectDocId) async {
   final aw = AppwriteService.I;
   await aw.ensureSession();
@@ -24,19 +25,18 @@ Future<void> debugQuestionCounts(String projectDocId) async {
     queries: [Query.limit(5)],
   );
 
-  print("DEBUG: phaseBaseline=${Constants.phaseBaseline}");
-  print("DEBUG: projectDocId=$projectDocId");
-  print("DEBUG: project_questions.total=${pq.total}");
-  print("DEBUG: questions.total=${q.total}");
+  debugPrint("DEBUG: phaseBaseline=${Constants.phaseBaseline}");
+  debugPrint("DEBUG: projectDocId=$projectDocId");
+  debugPrint("DEBUG: project_questions.total=${pq.total}");
+  debugPrint("DEBUG: questions.total=${q.total}");
   if (pq.documents.isNotEmpty) {
-    print("DEBUG: first project_question doc=${pq.documents.first.data}");
+    debugPrint("DEBUG: first project_question doc=${pq.documents.first.data}");
   }
 }
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Hive init + required boxes for offline-first + sync queue
   await Hive.initFlutter();
   await Hive.openBox('session');
   await Hive.openBox('children_local');
@@ -44,10 +44,17 @@ Future<void> main() async {
   await Hive.openBox('visit_answers_local');
   await Hive.openBox('sync_queue');
 
-  // Appwrite init (endpoint + projectId + databaseId should be set inside)
   AppwriteService.I.init();
-  await debugQuestionCounts("projects");
+  await AppwriteService.I.ensureSession();
 
+  // Seed Kannada baseline only
+  final seeder = KannadaBaselineSeeder(
+    aw: AppwriteService.I,
+    projectDocId: Constants.projectDocId, // <-- ROW id in projects table
+  );
+  await seeder.seedBaseline();
+
+  await debugQuestionCounts(Constants.projectDocId);
 
   runApp(const JagrutiApp());
 }

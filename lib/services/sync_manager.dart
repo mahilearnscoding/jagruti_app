@@ -12,7 +12,7 @@ class SyncManager {
   static final SyncManager I = SyncManager._();
 
   Future<bool> _isOnline() async {
-  final results = await Connectivity().checkConnectivity(); // List<ConnectivityResult>
+  final results = await Connectivity().checkConnectivity(); 
   return results.isNotEmpty && !results.contains(ConnectivityResult.none);
 }
 
@@ -39,11 +39,11 @@ class SyncManager {
 
       try {
         await _runJob(job);
-        await queue.delete(key); // ✅ success
+        await queue.delete(key); 
       } catch (e) {
         job['retryCount'] = (job['retryCount'] ?? 0) + 1;
         job['lastError'] = e.toString();
-        await queue.put(key, job); // keep for retry
+        await queue.put(key, job); //retry
       }
     }
   }
@@ -52,9 +52,6 @@ class SyncManager {
     final type = job['type'] as String;
 
     switch (type) {
-      // -------------------------
-      // CHILD JOBS
-      // -------------------------
       case ChildService.jobCreateChild:
         await AppwriteService.I.create(
           collectionId: Constants.colChildren,
@@ -73,10 +70,7 @@ class SyncManager {
           },
         );
         break;
-
-      // -------------------------
-      // VISIT JOBS
-      // -------------------------
+        
       case VisitService.jobCreateVisit:
         await AppwriteService.I.create(
           collectionId: Constants.colVisits,

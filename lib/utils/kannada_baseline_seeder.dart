@@ -560,7 +560,7 @@ class KannadaBaselineSeeder {
     },
   ];
 
-  Future<void> seedBaseline() async {
+    Future<void> seedBaseline() async {
     int displayOrder = 1;
 
     for (final q in baselineQuestions) {
@@ -587,8 +587,8 @@ class KannadaBaselineSeeder {
       data: {
         'question_key': key,
         'question_text': q['text'],
-        'answer_type': q['type'], // <-- IMPORTANT: matches QuestionService reading `answer_type`
-        'is_active': true,
+        'answer_type': q['type'],
+        // ❌ removed is_active (because your schema may not have it)
         'is_anthropometric': q['is_anthropometric'] ?? false,
       },
     );
@@ -604,7 +604,7 @@ class KannadaBaselineSeeder {
 
     for (int i = 0; i < opts.length; i++) {
       final label = opts[i].trim();
-      final value = '${qKey}_opt_${i + 1}'; // stable machine value (avoid unicode issues)
+      final value = '${qKey}_opt_${i + 1}'; // stable machine value
 
       final existing = await aw.list(
         collectionId: Constants.colQuestionOptions,
@@ -617,17 +617,13 @@ class KannadaBaselineSeeder {
       if (existing.documents.isNotEmpty) continue;
 
       await aw.create(
-        permissions: [
-        Permission.read(Role.any()),
-          Permission.write(Role.any()),
-        ],
         collectionId: Constants.colQuestionOptions,
         data: {
           'question': questionId,
           'option_value': value,
           'option_label': label,
           'display_order': i + 1,
-          'is_active': true,
+          // ❌ removed is_active too (only add if your schema has it)
         },
       );
     }
@@ -659,7 +655,7 @@ class KannadaBaselineSeeder {
         'phase': phase,
         'display_order': displayOrder,
         'is_required': q['is_required'] ?? true,
-        'is_active': true,
+        // ❌ removed is_active (this is the one crashing you)
       },
     );
   }

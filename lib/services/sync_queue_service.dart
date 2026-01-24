@@ -7,7 +7,7 @@ class SyncQueueService {
 
   void enqueue(Map<String, dynamic> job) {
     final box = Hive.box('sync_queue');
-    final id = const Uuid().v4();
+    final id =  Uuid().v4();
     box.put(id, {
       'id': id,
       ...job,

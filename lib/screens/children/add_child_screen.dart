@@ -37,9 +37,9 @@ class _AddChildScreenState extends State<AddChildScreen> {
   }
 
   void _saveAndStartBaseline() async {
-    if (_nameCtrl.text.isEmpty || _dob == null) {
+    if (_nameCtrl.text.isEmpty || _dob == null || _guardianCtrl.text.isEmpty || _contactCtrl.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Name and DOB are required")),
+        const SnackBar(content: Text("All fields are required: Name, DOB, Guardian Name, and Contact")),
       );
       return;
     }

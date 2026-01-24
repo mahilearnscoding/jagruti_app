@@ -5,6 +5,8 @@ import 'package:appwrite/appwrite.dart';
 import 'services/appwrite_service.dart';
 import 'utils/constants.dart';
 import 'utils/kannada_baseline_seeder.dart';
+import 'models/counselling_seeder.dart';
+import 'models/endline_seeder.dart';
 import 'screens/splash/splash_screen.dart';
 
 Future<void> debugQuestionCounts(String projectDocId) async {
@@ -45,18 +47,73 @@ Future<void> main() async {
   await Hive.openBox('sync_queue');
 
   AppwriteService.I.init();
+
+  // IMPORTANT: ensure we have a session before any DB ops
   await AppwriteService.I.ensureSession();
+  
+  // FORCE LOGIN AS SEEDER FOR DEVELOPMENT
+  try {
+    final client = Client()
+        .setEndpoint(Constants.appwriteEndpoint)
+        .setProject(Constants.appwriteProjectId);
+    final account = Account(client);
+    
+    // Clear any existing session first
+    try {
+      await account.deleteSession(sessionId: 'current');
+    } catch (_) {}
+    
+    // Now login as seeder
+    await account.createEmailPasswordSession(
+      email: 'seeder@jagruti.dev',
+      password: 'jagruti123',
+    );
+    print("🔑 LOGGED IN AS SEEDER ACCOUNT FOR SEEDING");
+  } catch (e) {
+    print("🔑 SEEDER LOGIN FAILED: $e");
+  }
 
-  // Seed Kannada baseline only
-  final seeder = KannadaBaselineSeeder(
-    aw: AppwriteService.I,
-    projectDocId: Constants.projectDocId, // <-- ROW id in projects table
-  );
-  await seeder.seedBaseline();
-
-  await debugQuestionCounts(Constants.projectDocId);
-
+  // Don't block app launch on seeding
   runApp(const JagrutiApp());
+
+  // SKIP SEEDING - MANUAL DATABASE POPULATION NEEDED
+  print("📝 Seeding skipped - populate database manually");
+  
+  /*
+  // Seed in background; if it fails, log and continue
+  try {
+    const projectDocId = "6970934c003c641b26dc";
+    
+    // Seed baseline questions
+    final baselineSeeder = KannadaBaselineSeeder(
+      aw: AppwriteService.I,
+      projectDocId: projectDocId,
+    );
+    await baselineSeeder.seedBaseline();
+    print("✅ Baseline questions seeded");
+    
+    // Seed counselling questions
+    final counsellingSeeder = CounsellingSeeder(
+      aw: AppwriteService.I,
+      projectDocId: projectDocId,
+    );
+    await counsellingSeeder.seedCounselling();
+    print("✅ Counselling questions seeded");
+    
+    // Seed endline questions
+    final endlineSeeder = EndlineSeeder(
+      aw: AppwriteService.I,
+      projectDocId: projectDocId,
+    );
+    await endlineSeeder.seedEndline();
+    print("✅ Endline questions seeded");
+    
+    // Debug question counts
+    await debugQuestionCounts(projectDocId);
+  } catch (e) {
+    print("⚠️ Seed failed (app still runs): $e");
+  }
+  */
 }
 
 class JagrutiApp extends StatelessWidget {

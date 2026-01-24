@@ -8,19 +8,21 @@ class KannadaBaselineSeeder {
 
   KannadaBaselineSeeder({required this.aw, required this.projectDocId});
 
-  // Public read/write for testing (change later if needed)
+  // public read/write for testing (change later)
   List<String> get _perms => [
         Permission.read(Role.any()),
         Permission.write(Role.any()),
       ];
 
     static const List<Map<String, dynamic>> baselineQuestions = [
-    // --- SECTION 1: HOUSEHOLD INFO (1–17) ---
+    //SECTION 1: HOUSEHOLD INFO (1–17)
     {
       'key': 'kn_q01',
       'text': 'ಮನೆಯ ಮುಖ್ಯಸ್ಥರ ಹೆಸರು:',
       'type': 'text',
       'is_required': true,
+      'section': 'ಮನೆಯ ಮಾಹಿತಿ (Household Information)',
+      'section_order': 1,
     },
     {
       'key': 'kn_q02',
@@ -180,12 +182,14 @@ class KannadaBaselineSeeder {
       'options': ['ಹೌದು, ನಿಯಮಿತವಾಗಿ', 'ಹೌದು, ಆದರೆ ಅಸಮರ್ಪಕ / ಭಾಗಶಃ', 'ಇಲ್ಲ', 'ಗೊತ್ತಿಲ್ಲ'],
     },
 
-    // --- SECTION 2: MOTHER DETAILS (18–25) ---
+    //SECTION 2: MOTHER DETAILS (18–25)
     {
       'key': 'kn_q18',
       'text': 'ತಾಯಿಯ ಹೆಸರು:',
       'type': 'text',
       'is_required': true,
+      'section': 'ತಾಯಿಯ ವಿವರಗಳು (Mother Details)',
+      'section_order': 2,
     },
     {
       'key': 'kn_q19',
@@ -261,7 +265,7 @@ class KannadaBaselineSeeder {
       ],
     },
 
-    // --- SECTION 3: CHILD DETAILS (26–32) ---
+    //SECTION 3: CHILD DETAILS (26–32)
     {
       'key': 'kn_q26',
       'text': 'ಮಗುವಿನ ಹೆಸರು (ಅಥವಾ ಐಡಿ):',
@@ -501,7 +505,7 @@ class KannadaBaselineSeeder {
       'options': ['₹0', '₹1–50', '₹51–100', '₹101–250', '₹250 ಕ್ಕಿಂತ ಹೆಚ್ಚು'],
     },
 
-    // --- SECTION 5: HEALTH & ANTHROPOMETRY (52–56) ---
+    //SECTION 5: HEALTH & ANTHROPOMETRY (52–56)
     {
       'key': 'kn_q52',
       'text': 'ಕಳೆದ ಎರಡು ವಾರಗಳಲ್ಲಿ, ಮಗುವಿಗೆ ಕೆಳಗಿನ ಯಾವುದೇ ಕಾಯಿಲೆಗಳಿದ್ದವೆಯೇ? (ಅನ್ವಯವಾಗುವ ಎಲ್ಲವನ್ನೂ ಗುರುತಿಸಿ)',
@@ -555,7 +559,7 @@ class KannadaBaselineSeeder {
       await _upsertProjectLink(questionId, q, displayOrder: displayOrder++);
     }
 
-    print("✅ KannadaBaselineSeeder: done");
+    print("KannadaBaselineSeeder: done");
   }
 
   Future<String> _upsertQuestion(Map<String, dynamic> q) async {
@@ -579,6 +583,8 @@ class KannadaBaselineSeeder {
         'answer_type': q['type'],
         'is_active': true,
         'is_anthropometric': q['is_anthropometric'] ?? false,
+        'section': q['section'] ?? 'General',
+        'section_order': q['section_order'] ?? 999,
       },
     );
 

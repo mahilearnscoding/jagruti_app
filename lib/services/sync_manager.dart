@@ -70,7 +70,29 @@ class SyncManager {
           },
         );
         break;
-        
+
+      case ChildService.jobMarkCounsellingSubmitted:
+        await AppwriteService.I.update(
+          collectionId: Constants.colChildren,
+          documentId: job['childId'],
+          data: {
+            'counsellingStatus': 'submitted',
+            'counsellingVisitId': job['visitId'],
+          },
+        );
+        break;
+
+      case ChildService.jobMarkEndlineSubmitted:
+        await AppwriteService.I.update(
+          collectionId: Constants.colChildren,
+          documentId: job['childId'],
+          data: {
+            'endlineStatus': 'submitted',
+            'endlineVisitId': job['visitId'],
+          },
+        );
+        break;
+      
       case VisitService.jobCreateVisit:
         await AppwriteService.I.create(
           collectionId: Constants.colVisits,

@@ -1,25 +1,3 @@
-// Kannada Baseline Survey Seeder (56 questions)
-// 
-// What this does:
-// - Inserts (or reuses) Question docs in `questions`
-// - Inserts (or reuses) Option docs in `question_options` (for choice questions)
-// - Links each question to a specific Project in `project_questions` for the "baseline" phase
-//
-// IMPORTANT:
-// - `projectDocId` = the *document $id* from your `projects` collection (the same id you pass into Baseline screen),
-//   NOT the Appwrite Console Project ID.
-//
-// Usage (run once per project):
-//   final seeder = KannadaBaselineSeeder(
-//     aw: AppwriteService.I,
-//     projectDocId: '<projects_doc_$id>',
-//   );
-//   await seeder.seedBaseline();
-//
-// Notes:
-// - Idempotent: safe to run multiple times; it won’t duplicate.
-// - Make sure your Appwrite permissions allow CREATE on these collections when you run it.
-
 import 'package:appwrite/appwrite.dart';
 import '../services/appwrite_service.dart';
 import '../utils/constants.dart';
@@ -30,19 +8,28 @@ class KannadaBaselineSeeder {
 
   KannadaBaselineSeeder({required this.aw, required this.projectDocId});
 
+  List<String> get _perms => [
+    Permission.read(Role.any()),
+    Permission.write(Role.any()),
+  ];
+
   static const List<Map<String, dynamic>> baselineQuestions = [
-    // --- SECTION 1: HOUSEHOLD INFO (1–17) ---
+    //SECTION 1: HOUSEHOLD INFO (1–17) 
     {
       'key': 'kn_q01',
       'text': 'ಮನೆಯ ಮುಖ್ಯಸ್ಥರ ಹೆಸರು:',
       'type': 'text',
       'is_required': true,
+      'section': 'ಮನೆಯ ಮಾಹಿತಿ (Household Information)',
+      'section_order': 1,
     },
     {
       'key': 'kn_q02',
       'text': 'ಮನೆಯ ಮುಖ್ಯಸ್ಥರ ಲಿಂಗ:',
       'type': 'single_choice',
       'is_required': true,
+      'section': 'ಮನೆಯ ಮಾಹಿತಿ (Household Information)',
+      'section_order': 1,
       'options': ['ಪುರುಷ', 'ಮಹಿಳೆ', 'ಇತರೆ'],
     },
     {
@@ -50,6 +37,8 @@ class KannadaBaselineSeeder {
       'text': 'ಮನೆಯಲ್ಲಿರುವ ಒಟ್ಟು ಸದಸ್ಯರ ಸಂಖ್ಯೆ:',
       'type': 'single_choice',
       'is_required': true,
+      'section': 'ಮನೆಯ ಮಾಹಿತಿ (Household Information)',
+      'section_order': 1,
       'options': ['1–3', '4–5', '6–7', '8 ಅಥವಾ ಹೆಚ್ಚು'],
     },
     {
@@ -57,6 +46,8 @@ class KannadaBaselineSeeder {
       'text': 'ಮನೆಯ ಸಾಮಾಜಿಕ ಗುಂಪು / ಜಾತಿ:',
       'type': 'single_choice',
       'is_required': true,
+      'section': 'ಮನೆಯ ಮಾಹಿತಿ (Household Information)',
+      'section_order': 1,
       'options': [
         'ಪರಿಶಿಷ್ಟ ಜಾತಿ (SC)',
         'ಪರಿಶಿಷ್ಟ ಪಂಗಡ (ST)',
@@ -70,6 +61,8 @@ class KannadaBaselineSeeder {
       'text': 'ಮನೆಯ ಪ್ರಾಥಮಿಕ ಉದ್ಯೋಗ (ಆದಾಯದ ಮುಖ್ಯ ಮೂಲ):',
       'type': 'single_choice',
       'is_required': true,
+      'section': 'ಮನೆಯ ಮಾಹಿತಿ (Household Information)',
+      'section_order': 1,
       'options': [
         'ಗಣಿಗಾರಿಕೆಗೆ ಸಂಬಂಧಿಸಿದ ಕೆಲಸ (ಗಣಿ/ಸಾರಿಗೆ/ಲೋಡಿಂಗ್/ಕ್ರಷರ್)',
         'ದಿನಗೂಲಿ ಕೆಲಸ (ಗಣಿಗಾರಿಕೆಯೇತರ)',
@@ -202,6 +195,8 @@ class KannadaBaselineSeeder {
       'text': 'ತಾಯಿಯ ಹೆಸರು:',
       'type': 'text',
       'is_required': true,
+      'section': 'ತಾಯಿಯ ವಿವರಗಳು (Mother Details)',
+      'section_order': 2,
     },
     {
       'key': 'kn_q19',
@@ -283,6 +278,8 @@ class KannadaBaselineSeeder {
       'text': 'ಮಗುವಿನ ಹೆಸರು (ಅಥವಾ ಐಡಿ):',
       'type': 'text',
       'is_required': true,
+      'section': 'ಮಗುವಿನ ವಿವರಗಳು (Child Details)',
+      'section_order': 3,
     },
     {
       'key': 'kn_q27',
@@ -343,8 +340,8 @@ class KannadaBaselineSeeder {
       'key': 'kn_q33',
       'text': 'ನೀವು ಮಗುವಿಗೆ ಎದೆ ಹಾಲು ಹೊರತುಪಡಿಸಿ ಇತರ ಆಹಾರವನ್ನು ಯಾವ ವಯಸ್ಸಿನಲ್ಲಿ ನೀಡಲು ಪ್ರಾರಂಭಿಸಿದ್ದೀರಿ?',
       'type': 'single_choice',
-      'is_required': true,
-      'options': ['6 ತಿಂಗಳ ಮೊದಲು', '6–8 ತಿಂಗಳ ನಡುವೆ', '9–11 ತಿಂಗಳ ನಡುವೆ', '11 ತಿಂಗಳ ನಂತರ', 'ನೆನಪಿಲ್ಲ'],
+      'is_required': true,      'section': 'ಮಕ್ಕಳ ಆಹಾರ ಪದ್ಧತಿ (Child Diet - Part A)',
+      'section_order': 4,      'options': ['6 ತಿಂಗಳ ಮೊದಲು', '6–8 ತಿಂಗಳ ನಡುವೆ', '9–11 ತಿಂಗಳ ನಡುವೆ', '11 ತಿಂಗಳ ನಂತರ', 'ನೆನಪಿಲ್ಲ'],
     },
     {
       'key': 'kn_q34',
@@ -424,8 +421,8 @@ class KannadaBaselineSeeder {
       'key': 'kn_q41',
       'text': 'ನಿನ್ನೆ, ಮಗು ಅಂಗನವಾಡಿ ಕೇಂದ್ರದಿಂದ ಪಡೆದ ಆಹಾರ ಹಾಗೂ ಮನೆಯಲ್ಲಿ ತಯಾರಿಸಿದ ಆಹಾರವನ್ನು ಸೇರಿಸಿ (ಊಟ ಅಥವಾ ತಿಂಡಿಗಳು), ಒಟ್ಟು ಎಷ್ಟು ಬಾರಿ ಸೇವಿಸಿದೆ?',
       'type': 'single_choice',
-      'is_required': true,
-      'options': ['0–2 ಬಾರಿ', '3 ಬಾರಿ', '4 ಅಥವಾ ಅದಕ್ಕಿಂತ ಹೆಚ್ಚು ಬಾರಿ'],
+      'is_required': true,      'section': 'ಮಕ್ಕಳ ಆಹಾರ ಪದ್ಧತಿ (Child Diet - Part B)',
+      'section_order': 5,      'options': ['0–2 ಬಾರಿ', '3 ಬಾರಿ', '4 ಅಥವಾ ಅದಕ್ಕಿಂತ ಹೆಚ್ಚು ಬಾರಿ'],
     },
     {
       'key': 'kn_q42',
@@ -522,8 +519,8 @@ class KannadaBaselineSeeder {
       'key': 'kn_q52',
       'text': 'ಕಳೆದ ಎರಡು ವಾರಗಳಲ್ಲಿ, ಮಗುವಿಗೆ ಕೆಳಗಿನ ಯಾವುದೇ ಕಾಯಿಲೆಗಳಿದ್ದವೆಯೇ? (ಅನ್ವಯವಾಗುವ ಎಲ್ಲವನ್ನೂ ಗುರುತಿಸಿ)',
       'type': 'multi_choice',
-      'is_required': true,
-      'options': ['ಅತಿಸಾರ', 'ವೇಗವಾಗಿ ಅಥವಾ ಉಸಿರಾಟದ ತೊಂದರೆಯೊಂದಿಗೆ ಕೆಮ್ಮು', 'ಯಾವುದೂ ಇಲ್ಲ'],
+      'is_required': true,      'section': 'ಮಗುವಿನ ಆರೇಗ್ಯ ಮತ್ತು ಕಾಯ ಮಾಪಗಳು (Health & Measurements)',
+      'section_order': 6,      'options': ['ಅತಿಸಾರ', 'ವೇಗವಾಗಿ ಅಥವಾ ಉಸಿರಾಟದ ತೊಂದರೆಯೊಂದಿಗೆ ಕೆಮ್ಮು', 'ಯಾವುದೂ ಇಲ್ಲ'],
     },
     {
       'key': 'kn_q53',
@@ -584,12 +581,13 @@ class KannadaBaselineSeeder {
 
     final created = await aw.create(
       collectionId: Constants.colQuestions,
+      permissions: _perms,
       data: {
         'question_key': key,
         'question_text': q['text'],
         'answer_type': q['type'],
-        // ❌ removed is_active (because your schema may not have it)
         'is_anthropometric': q['is_anthropometric'] ?? false,
+        'is_active': true,
       },
     );
 
@@ -618,12 +616,12 @@ class KannadaBaselineSeeder {
 
       await aw.create(
         collectionId: Constants.colQuestionOptions,
+        permissions: _perms,
         data: {
           'question': questionId,
           'option_value': value,
           'option_label': label,
           'display_order': i + 1,
-          // ❌ removed is_active too (only add if your schema has it)
         },
       );
     }
@@ -649,13 +647,13 @@ class KannadaBaselineSeeder {
 
     await aw.create(
       collectionId: Constants.colProjectQuestions,
+      permissions: _perms,
       data: {
         'project': projectDocId,
         'question': questionId,
         'phase': phase,
         'display_order': displayOrder,
         'is_required': q['is_required'] ?? true,
-        // ❌ removed is_active (this is the one crashing you)
       },
     );
   }

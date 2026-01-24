@@ -30,14 +30,44 @@ class AppwriteService {
     _inited = true;
   }
 
+  Client get client => _client;
+  Account get account => _account;
+
   Future<void> ensureSession() async {
-    if (!_inited) init();
+    if (!_inited) {
+      init();
+    }
 
     try {
-      await _account.get(); // already logged in
-    } on AppwriteException {
-      // create anon session (works only if enabled in Appwrite)
-      await _account.createAnonymousSession();
+      await _account.get();
+    } catch (_) {
+      // Instead of anonymous session, create a seeder account
+      try {
+        await _account.createEmailPasswordSession(
+          email: 'seeder@jagruti.dev',
+          password: 'jagruti123',
+        );
+        print("✅ Using seeder account for database operations");
+      } catch (e) {
+        // If seeder account fails, create it
+        try {
+          await _account.create(
+            userId: 'seeder001',
+            email: 'seeder@jagruti.dev',
+            password: 'jagruti123',
+            name: 'Seeder Account',
+          );
+          await _account.createEmailPasswordSession(
+            email: 'seeder@jagruti.dev',
+            password: 'jagruti123',
+          );
+          print("✅ Created and using seeder account");
+        } catch (e2) {
+          // Last resort: anonymous
+          await _account.createAnonymousSession();
+          print("⚠️ Using anonymous session - seeding may fail: $e2");
+        }
+      }
     }
   }
 

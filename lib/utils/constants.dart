@@ -1,5 +1,6 @@
 class Constants {
-  static const String appwriteEndpoint = 'https://cloud.appwrite.io/v1';
+  // Frankfurt region endpoint - CRITICAL FIX!
+  static const String appwriteEndpoint = 'https://fra.cloud.appwrite.io/v1';
   static const String appwriteProjectId = '696a5e940026621a01ee';
   static const String databaseId = '696a60cf00151d14bf35';
 
@@ -19,4 +20,6 @@ class Constants {
 
   // phases
   static const String phaseBaseline = 'baseline';
+  static const String phaseCounselling = 'counselling';
+  static const String phaseEndline = 'endline';
 }

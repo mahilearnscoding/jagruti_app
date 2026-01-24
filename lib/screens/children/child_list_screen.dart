@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/child_service.dart';
 import 'add_child_screen.dart';
+import 'child_profile_screen.dart';
 
 class ChildListScreen extends StatefulWidget {
   final String projectId;
@@ -111,10 +112,17 @@ class _ChildListScreenState extends State<ChildListScreen> {
                         ),
                         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                         onTap: () {
-                          // Placeholder for future Profile/Edit Screen
-                          ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text("Profile View Coming Soon")));
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ChildProfileScreen(
+                                projectId: widget.projectId,
+                                childId: child['id'] ?? '',
+                                childName: child['name'] ?? 'Unknown',
+                                child: child,
+                              ),
+                            ),
+                          );
                         },
                       ),
                     );

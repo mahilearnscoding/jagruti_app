@@ -8,6 +8,8 @@ class QuestionBundle {
   final String type;
   final bool isRequired;
   final List<Map<String, String>> options;
+  final String? section;
+  final int? sectionOrder;
 
   QuestionBundle({
     required this.questionId,
@@ -15,6 +17,8 @@ class QuestionBundle {
     required this.type,
     required this.isRequired,
     required this.options,
+    this.section,
+    this.sectionOrder,
   });
 }
 
@@ -22,7 +26,22 @@ class QuestionService {
   QuestionService._();
   static final QuestionService I = QuestionService._();
 
-  Future<List<QuestionBundle>> getBaselineQuestions(String projectId) async {
+  Future<List<QuestionBundle>> getBaselineQuestions(String projectId) {
+    return getQuestionsForPhase(projectId: projectId, phase: Constants.phaseBaseline);
+  }
+
+  Future<List<QuestionBundle>> getCounsellingQuestions(String projectId) {
+    return getQuestionsForPhase(projectId: projectId, phase: Constants.phaseCounselling);
+  }
+
+  Future<List<QuestionBundle>> getEndlineQuestions(String projectId) {
+    return getQuestionsForPhase(projectId: projectId, phase: Constants.phaseEndline);
+  }
+
+  Future<List<QuestionBundle>> getQuestionsForPhase({
+    required String projectId,
+    required String phase,
+  }) async {
     final aw = AppwriteService.I;
     await aw.ensureSession();
 
@@ -31,7 +50,7 @@ class QuestionService {
       collectionId: Constants.colProjectQuestions,
       queries: [
         Query.equal('project', projectId),
-        Query.equal('phase', Constants.phaseBaseline),
+        Query.equal('phase', phase),
         Query.orderAsc('display_order'),
       ],
     );
@@ -40,7 +59,7 @@ class QuestionService {
 
     for (var doc in pqRes.documents) {
       final qId = aw.relId(doc.data['question']);
-      if (qId == null) continue;
+      if (qId.isEmpty) continue;
 
       // get Question Text
       final qDoc = await aw.get(
@@ -76,6 +95,8 @@ class QuestionService {
           type: type,
           isRequired: (doc.data['is_required'] ?? false) == true,
           options: options,
+          section: (qDoc.data['section'] ?? 'General').toString(),
+          sectionOrder: qDoc.data['section_order'] as int?,
         ),
       );
     }

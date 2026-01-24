@@ -16,7 +16,7 @@ class VisitService {
     required String phase,
     required String fwId,
   }) async {
-    final visitId = const Uuid().v4();
+    final visitId = Uuid().v4();
     final nowIso = DateTime.now().toIso8601String();
 
     // Required by your visits schema (pilot placeholders)
@@ -68,13 +68,13 @@ class VisitService {
     answersBox.put(answerKey, {
       'visit': visitId,
       'question': questionId,
-      'answer_text': value?.toString() ?? '',
+      'answer_text': _encodeAnswer(value),
       'updatedAt': DateTime.now().toIso8601String(),
     });
 
     // Deterministic docId so retries don't duplicate answers
     // NOTE: your uuid version expects namespace as String -> use Uuid.NAMESPACE_URL
-    final answerDocId = const Uuid().v5(Uuid.NAMESPACE_URL, answerKey);
+    final answerDocId =  Uuid().v5(Uuid.NAMESPACE_URL, answerKey);
 
     SyncQueueService.I.enqueue({
       'type': jobUpsertVisitAnswer,
@@ -82,9 +82,19 @@ class VisitService {
       'data': {
         'visit': visitId,
         'question': questionId,
-        'answer_text': value?.toString() ?? '',
+        'answer_text': _encodeAnswer(value),
       }
     });
+  }
+
+  String _encodeAnswer(dynamic value) {
+    if (value is Set) {
+      return value.map((e) => e.toString()).join(',');
+    }
+    if (value is List) {
+      return value.map((e) => e.toString()).join(',');
+    }
+    return value?.toString() ?? '';
   }
 
   /// Local-only marker (no server update because visits schema doesn't have status)

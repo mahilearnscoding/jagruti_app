@@ -12,6 +12,8 @@ class ChildService {
 
   static const String jobCreateChild = 'CREATE_CHILD';
   static const String jobMarkBaselineSubmitted = 'MARK_BASELINE_SUBMITTED';
+  static const String jobMarkCounsellingSubmitted = 'MARK_COUNSELLING_SUBMITTED';
+  static const String jobMarkEndlineSubmitted = 'MARK_ENDLINE_SUBMITTED';
 
   /// Returns children for a project as a merged list:
   /// - local-first (offline saved)
@@ -91,6 +93,10 @@ class ChildService {
       'guardian_contact': guardianContact,
       'baselineStatus': 'draft',
       'baselineVisitId': null,
+      'counsellingStatus': 'pending',
+      'counsellingVisitId': null,
+      'endlineStatus': 'pending',
+      'endlineVisitId': null,
       'createdAt': DateTime.now().toIso8601String(),
       'synced': false,
     };
@@ -110,6 +116,8 @@ class ChildService {
         'guardian_name': guardianName,
         'guardian_contact': guardianContact,
         'baselineStatus': 'draft',
+        'counsellingStatus': 'pending',
+        'endlineStatus': 'pending',
       },
     });
 
@@ -130,9 +138,51 @@ class ChildService {
       c['synced'] = false;
       box.put(childId, c);
     }
-
+ 
     SyncQueueService.I.enqueue({
       'type': jobMarkBaselineSubmitted,
+      'childId': childId,
+      'visitId': visitId,
+    });
+  }
+
+  Future<void> markCounsellingSubmittedLocal({
+    required String childId,
+    required String visitId,
+  }) async {
+    final box = Hive.box('children_local');
+    final existing = box.get(childId);
+    if (existing != null) {
+      final c = Map<String, dynamic>.from(existing);
+      c['counsellingStatus'] = 'submitted';
+      c['counsellingVisitId'] = visitId;
+      c['synced'] = false;
+      box.put(childId, c);
+    }
+
+    SyncQueueService.I.enqueue({
+      'type': jobMarkCounsellingSubmitted,
+      'childId': childId,
+      'visitId': visitId,
+    });
+  }
+
+  Future<void> markEndlineSubmittedLocal({
+    required String childId,
+    required String visitId,
+  }) async {
+    final box = Hive.box('children_local');
+    final existing = box.get(childId);
+    if (existing != null) {
+      final c = Map<String, dynamic>.from(existing);
+      c['endlineStatus'] = 'submitted';
+      c['endlineVisitId'] = visitId;
+      c['synced'] = false;
+      box.put(childId, c);
+    }
+
+    SyncQueueService.I.enqueue({
+      'type': jobMarkEndlineSubmitted,
       'childId': childId,
       'visitId': visitId,
     });

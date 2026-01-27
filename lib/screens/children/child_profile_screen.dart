@@ -4,8 +4,10 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../../services/visit_service.dart';
 import '../../services/sync_manager.dart';
 import '../../services/local_storage_service.dart';
+import '../../services/counselling_service.dart';
 import '../../utils/constants.dart';
 import '../visits/baseline_visit_screen.dart';
+import '../visits/counselling_screen.dart';
 
 class ChildProfileScreen extends StatefulWidget {
   final String projectId;
@@ -37,7 +39,7 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
     _refreshChildData();
   }
 
-  void _refreshChildData() {
+  void _refreshChildData() async {
     final box = Hive.box('children_local');
     final local = box.get(widget.childId);
     if (local != null) {
@@ -45,37 +47,33 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
         _childData = Map<String, dynamic>.from(local);
       });
     }
+    
+    // Also check counselling completion from database
+    try {
+      final isCounsellingCompleted = await CounsellingService.I.isCounsellingCompleted(
+        childId: widget.childId,
+        projectId: widget.projectId,
+      );
+      if (isCounsellingCompleted && _childData['counsellingStatus'] != 'submitted') {
+        _childData['counsellingStatus'] = 'submitted';
+        box.put(widget.childId, _childData);
+        if (mounted) setState(() {});
+      }
+    } catch (e) {
+      print('Error checking counselling status: $e');
+    }
   }
 
-  /// Check if baseline is completed
-  bool get _baselineComplete => _childData['baselineStatus'] == 'submitted';
-
-  /// Check if counselling is completed
+  //check if counselling is completed
   bool get _counsellingComplete => _childData['counsellingStatus'] == 'submitted';
 
-  /// Check if endline is enabled (baseline required, counselling optional but recommended)
-  bool get _endlineEnabled => _baselineComplete;
+  // Endline is enabled after counselling completion (baseline is already done)
+  bool get _endlineEnabled => _counsellingComplete;
 
   Future<void> _startCounselling() async {
-    if (!_baselineComplete) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Baseline survey must be completed first'),
-        ),
-      );
-      return;
-    }
-
     setState(() => _isCounsellingLoading = true);
 
     try {
-      final fwId = LocalStorageService.I.fieldWorkerId ?? 'unknown_worker';
-      final visitId = await VisitService.I.createVisitLocal(
-        childId: widget.childId,
-        phase: Constants.phaseCounselling,
-        fwId: fwId,
-      );
-
       await SyncManager.I.trySync();
 
       if (!mounted) return;
@@ -83,13 +81,10 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
       final result = await Navigator.push<bool>(
         context,
         MaterialPageRoute(
-          builder: (_) => BaselineVisitScreen(
-            visitId: visitId,
+          builder: (_) => CounsellingScreen(
             projectId: widget.projectId,
             childId: widget.childId,
             childName: widget.childName,
-            phase: Constants.phaseCounselling,
-            title: 'Counselling: ${widget.childName}',
           ),
         ),
       );
@@ -108,10 +103,10 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
   }
 
   Future<void> _startEndline() async {
-    if (!_baselineComplete) {
+    if (!_counsellingComplete) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Baseline survey must be completed first'),
+          content: Text('Counselling survey must be completed first'),
         ),
       );
       return;
@@ -260,28 +255,34 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
 
             // Phase Status Section
             Text(
-              'Assessment Phases',
+              'Remaining Assessment Phases',
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 12),
 
-            // Baseline Status
+            // Note about baseline completion
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade300),
+                color: Colors.green.shade50,
                 borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.green.shade300),
               ),
               child: Row(
                 children: [
-                  _statusBadge('Baseline', _baselineComplete),
+                  Icon(Icons.check_circle, color: Colors.green, size: 20),
                   const SizedBox(width: 8),
-                  if (_baselineComplete)
-                    const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                  Text(
+                    'Baseline assessment completed',
+                    style: TextStyle(
+                      color: Colors.green.shade700,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
 
             // Counselling Status
             Container(
@@ -325,7 +326,7 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                     const Icon(Icons.check_circle, color: Colors.green, size: 20),
                   if (!_endlineEnabled && _childData['endlineStatus'] != 'submitted')
                     Tooltip(
-                      message: 'Baseline must be completed first',
+                      message: 'Counselling must be completed first',
                       child: Icon(
                         Icons.lock,
                         color: Colors.grey.shade400,
@@ -350,12 +351,10 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
               height: 50,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _baselineComplete ? teal : Colors.grey.shade300,
+                  backgroundColor: teal,
                   disabledBackgroundColor: Colors.grey.shade300,
                 ),
-                onPressed: !_baselineComplete || _isCounsellingLoading
-                    ? null
-                    : _startCounselling,
+                onPressed: _isCounsellingLoading ? null : _startCounselling,
                 child: _isCounsellingLoading
                     ? const SizedBox(
                         height: 20,
@@ -425,7 +424,7 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Complete Baseline survey to unlock Endline',
+                        'Complete Counselling survey to unlock Endline',
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.orange.shade700,

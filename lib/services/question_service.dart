@@ -52,6 +52,7 @@ class QuestionService {
         Query.equal('project', projectId),
         Query.equal('phase', phase),
         Query.orderAsc('display_order'),
+        Query.limit(100), // Ensure we get all questions (default is 25)
       ],
     );
 

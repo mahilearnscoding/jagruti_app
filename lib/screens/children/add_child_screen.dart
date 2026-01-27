@@ -66,10 +66,9 @@ class _AddChildScreenState extends State<AddChildScreen> {
         fwId: fwId,
       );
 
-      // 3) Best-effort sync now (if online)
-      await SyncManager.I.trySync();
+      // NOTE: No sync here! Child will be synced only after baseline is submitted
 
-      // 4) Navigate to survey (same flow, but now we pass childId too)
+      // 3) Navigate to survey (same flow, but now we pass childId too)
       if (!mounted) return;
 
       Navigator.pushReplacement(

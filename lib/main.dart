@@ -48,29 +48,13 @@ Future<void> main() async {
 
   AppwriteService.I.init();
 
-  // IMPORTANT: ensure we have a session before any DB ops
-  await AppwriteService.I.ensureSession();
-  
-  // FORCE LOGIN AS SEEDER FOR DEVELOPMENT
+  // FORCE LOGIN AS SEEDER ACCOUNT FOR ALL DATABASE OPERATIONS
   try {
-    final client = Client()
-        .setEndpoint(Constants.appwriteEndpoint)
-        .setProject(Constants.appwriteProjectId);
-    final account = Account(client);
-    
-    // Clear any existing session first
-    try {
-      await account.deleteSession(sessionId: 'current');
-    } catch (_) {}
-    
-    // Now login as seeder
-    await account.createEmailPasswordSession(
-      email: 'seeder@jagruti.dev',
-      password: 'jagruti123',
-    );
-    print("🔑 LOGGED IN AS SEEDER ACCOUNT FOR SEEDING");
+    await AppwriteService.I.ensureSession();
+    print("🔑 SEEDER SESSION ESTABLISHED FOR DATABASE ACCESS");
   } catch (e) {
-    print("🔑 SEEDER LOGIN FAILED: $e");
+    print("🔑 SEEDER LOGIN ERROR: $e");
+    print("❌ APP MAY NOT WORK WITHOUT PROPER DATABASE PERMISSIONS");
   }
 
   // Don't block app launch on seeding

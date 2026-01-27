@@ -17,6 +17,11 @@ class Constants {
   static const String colQuestions = 'questions';
   static const String colQuestionOptions = 'question_options';
   static const String colProjectQuestions = 'project_questions';
+  
+  // counselling tables
+  static const String colCounsellingItems = 'counselling_items';
+  static const String colCounsellingVisits = 'counselling_visits';
+  static const String colCounsellingResponses = 'counselling_responses';
 
   // phases
   static const String phaseBaseline = 'baseline';

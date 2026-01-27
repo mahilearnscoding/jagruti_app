@@ -40,16 +40,23 @@ class AppwriteService {
 
     try {
       await _account.get();
+      print("✅ Using existing session");
     } catch (_) {
-      // Instead of anonymous session, create a seeder account
+      // Force login as seeder for database operations
       try {
+        // Clear any existing session first
+        try {
+          await _account.deleteSession(sessionId: 'current');
+        } catch (_) {}
+        
         await _account.createEmailPasswordSession(
           email: 'seeder@jagruti.dev',
           password: 'jagruti123',
         );
-        print("✅ Using seeder account for database operations");
+        print("✅ Logged in as seeder account for database operations");
       } catch (e) {
-        // If seeder account fails, create it
+        print("❌ Seeder login failed: $e");
+        // Try creating seeder account if it doesn't exist
         try {
           await _account.create(
             userId: 'seeder001',
@@ -61,11 +68,10 @@ class AppwriteService {
             email: 'seeder@jagruti.dev',
             password: 'jagruti123',
           );
-          print("✅ Created and using seeder account");
+          print("✅ Created and logged in as seeder account");
         } catch (e2) {
-          // Last resort: anonymous
-          await _account.createAnonymousSession();
-          print("⚠️ Using anonymous session - seeding may fail: $e2");
+          print("❌ Failed to create seeder account: $e2");
+          throw Exception('Authentication failed: Cannot access database without proper permissions');
         }
       }
     }

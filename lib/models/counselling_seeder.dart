@@ -13,255 +13,187 @@ class CounsellingSeeder {
     Permission.write(Role.any()),
   ];
 
-  static const List<Map<String, dynamic>> counsellingQuestions = [
-    // COUNSELLING QUESTIONS SECTION
+  static const List<Map<String, dynamic>> counsellingItems = [
+    // Session Details Category
     {
-      'key': 'kn_counsel_q01',
-      'text': 'ತಾಯಿಯ ಹೆಸರು:',
-      'type': 'text',
-      'is_required': true,
+      'key': 'session_location',
+      'category': 'ಸಮಾಲೋಚನೆ ವಿವರಗಳು',
+      'description': 'ಸಮಾಲೋಚನೆ ನಡೆದ ಸ್ಥಳ ದಾಖಲಿಸಿ',
+      'status_type': 'selection',
+      'options': ['ಮನೆ ಭೇಟಿ', 'ಸಭೆಯ ಸ್ಥಳ', 'ಅಂಗನವಾಡಿ ಕೇಂದ್ರ'],
+      'display_order': 1,
     },
     {
-      'key': 'kn_counsel_q02',
-      'text': 'ಮಗುವಿನ ಹೆಸರು:',
-      'type': 'text',
-      'is_required': true,
+      'key': 'session_duration',
+      'category': 'ಸಮಾಲೋಚನೆ ವಿವರಗಳು',
+      'description': 'ಸಮಾಲೋಚನೆ ಅವಧಿ ದಾಖಲಿಸಿ',
+      'status_type': 'selection',
+      'options': ['15-30 ನಿಮಿಷಗಳು', '30-45 ನಿಮಿಷಗಳು', '45 ನಿಮಿಷಗಳಿಗಿಂತ ಹೆಚ್ಚು'],
+      'display_order': 2,
+    },
+
+    // Feeding Frequency & Practices Category
+    {
+      'key': 'feeding_frequency',
+      'category': 'ಆಹಾರ ಆವರ್ತನ ಮತ್ತು ಆಚರಣೆಗಳು',
+      'description': 'ದಿನಕ್ಕೆ ಕನಿಷ್ಠ 4 ಬಾರಿ ಆಹಾರ ನೀಡುವುದನ್ನು ಚರ್ಚಿಸಲಾಗಿದೆಯೇ?',
+      'status_type': 'checkbox',
+      'display_order': 10,
     },
     {
-      'key': 'kn_counsel_q03',
-      'text': 'ಮಗುವಿನ ವಯಸ್ಸು ಗುಂಪು:',
-      'type': 'single_choice',
-      'is_required': true,
-      'options': ['6–35 ತಿಂಗಳುಗಳು', '35–59 ತಿಂಗಳುಗಳು'],
+      'key': 'food_consistency',
+      'category': 'ಆಹಾರ ಆವರ್ತನ ಮತ್ತು ಆಚರಣೆಗಳು',
+      'description': 'ದಪ್ಪ / ಅರೆ-ಘನ ಆಹಾರದ ಸ್ಠಿರತೆಯನ್ನು ಚರ್ಚಿಸಲಾಗಿದೆಯೇ?',
+      'status_type': 'checkbox',
+      'display_order': 11,
     },
     {
-      'key': 'kn_counsel_q04',
-      'text': 'ಪೌಷ್ಠಿಕಾಂಶದ ಸ್ಥಿತಿ:',
-      'type': 'single_choice',
-      'is_required': true,
-      'options': [
-        'ಸಾಮಾನ್ಯ',
-        'MAM (ಮಧ್ಯಮ ಅಪೌಷ್ಟಿಕತೆ)',
-        'SAM (ತೀವ್ರ ಅಪೌಷ್ಟಿಕತೆ)',
-      ],
+      'key': 'age_appropriate_foods',
+      'category': 'ಆಹಾರ ಆವರ್ತನ ಮತ್ತು ಆಚರಣೆಗಳು',
+      'description': 'ವಯಸ್ಸಿಗೆ ಸೂಕ್ತವಾದ ಆಹಾರಗಳ ಆಯ್ಕೆ ಬಗ್ಗೆ ಚರ್ಚಿಸಲಾಗಿದೆಯೇ?',
+      'status_type': 'checkbox',
+      'display_order': 12,
     },
     {
-      'key': 'kn_counsel_q05',
-      'text': 'ಸಮಾಲೋಚನೆ ನಡೆದ ಸ್ಥಳ:',
-      'type': 'single_choice',
-      'is_required': true,
-      'options': ['ಮನೆ ಭೇಟಿ', 'ಸಭೆಯ ಸ್ಥಳ'],
+      'key': 'continued_breastfeeding',
+      'category': 'ಆಹಾರ ಆವರ್ತನ ಮತ್ತು ಆಚರಣೆಗಳು',
+      'description': 'ನಿರಂತರ ಸ್ತನ್ಯಪಾನನ್ನು ಚರ್ಚಿಸಲಾಗಿದೆಯೇ? (ಅನ್ವಯಿಸಿದರೆ)',
+      'status_type': 'checkbox_na',
+      'display_order': 13,
+    },
+
+    // Food Preparation & Portions Category
+    {
+      'key': 'proper_preparation',
+      'category': 'ಆಹಾರ ತಯಾರಿಕೆ ಮತ್ತು ಪ್ರಮಾಣ',
+      'description': 'ಸರಿಯಾದ ತಯಾರಿಕೆಯನ್ನು ವಿವರಿಸಲಾಗಿದೆಯೇ?',
+      'status_type': 'checkbox',
+      'display_order': 20,
     },
     {
-      'key': 'kn_counsel_q06',
-      'text': 'ದಿನಕ್ಕೆ ಕನಿಷ್ಠ 4 ಬಾರಿ ಆಹಾರ ನೀಡುವುದನ್ನು ಚರ್ಚಿಸಲಾಗಿದೆಯೇ?',
-      'type': 'single_choice',
-      'is_required': true,
-      'options': ['ಹೌದು', 'ಇಲ್ಲ'],
+      'key': 'portion_per_feed',
+      'category': 'ಆಹಾರ ತಯಾರಿಕೆ ಮತ್ತು ಪ್ರಮಾಣ',
+      'description': 'ಪ್ರತಿ ಫೀಡ್‌ಗೆ ನೀಡುವ ಪ್ರಮಾಣವನ್ನು ಚರ್ಚಿಸಲಾಗಿದೆಯೇ?',
+      'status_type': 'checkbox',
+      'display_order': 21,
     },
     {
-      'key': 'kn_counsel_q07',
-      'text': 'ದಪ್ಪ / ಅರೆ-ಘನ ಆಹಾರದ ಸ್ಥಿರತೆಯನ್ನು ಚರ್ಚಿಸಲಾಗಿದೆಯೇ?',
-      'type': 'single_choice',
-      'is_required': true,
-      'options': ['ಹೌದು', 'ಇಲ್ಲ'],
+      'key': 'child_exclusive_use',
+      'category': 'ಆಹಾರ ತಯಾರಿಕೆ ಮತ್ತು ಪ್ರಮಾಣ',
+      'description': 'ಮಗುವಿಗೆ ಮಾತ್ರ ಬಳಸುವಂತೆ ಒತ್ತು ನೀಡಲಾಗಿದೆಯೇ?',
+      'status_type': 'checkbox',
+      'display_order': 22,
+    },
+
+    // Junk Food & Alternatives Category
+    {
+      'key': 'junk_food_harms',
+      'category': 'ಜಂಕ್ ಫುಡ್ ಮತ್ತು ಪರ್ಯಾಯಗಳು',
+      'description': 'ಜಂಕ್ ಫುಡ್‌ನ ಹಾನಿಗಳನ್ನು ವಿವರಿಸಲಾಗಿದೆಯೇ?',
+      'status_type': 'checkbox',
+      'display_order': 30,
     },
     {
-      'key': 'kn_counsel_q08',
-      'text': 'ವಯಸ್ಸಿಗೆ ಸೂಕ್ತವಾದ ಆಹಾರಗಳ ಆಯ್ಕೆ ಬಗ್ಗೆ ಚರ್ಚಿಸಲಾಗಿದೆಯೇ?',
-      'type': 'single_choice',
-      'is_required': true,
-      'options': ['ಹೌದು', 'ಇಲ್ಲ'],
+      'key': 'identify_junk_foods',
+      'category': 'ಜಂಕ್ ಫುಡ್ ಮತ್ತು ಪರ್ಯಾಯಗಳು',
+      'description': 'ಮಗು ಸೇವಿಸುವ ಜಂಕ್ ಫುಡ್‌ಗಳನ್ನು ಗುರುತಿಸಲಾಗಿದೆಯೇ?',
+      'status_type': 'checkbox',
+      'display_order': 31,
     },
     {
-      'key': 'kn_counsel_q09',
-      'text': 'ನಿರಂತರ ಸ್ತನ್ಯಪಾನನ್ನು ಚರ್ಚಿಸಲಾಗಿದೆಯೇ? (ಅನ್ವಯಿಸಿದರೆ)',
-      'type': 'single_choice',
-      'is_required': true,
-      'options': ['ಹೌದು', 'ಇಲ್ಲ', 'ಅನ್ವಯವಾಗುವುದಿಲ್ಲ'],
+      'key': 'healthy_alternatives',
+      'category': 'ಜಂಕ್ ಫುಡ್ ಮತ್ತು ಪರ್ಯಾಯಗಳು',
+      'description': 'ಸ್ಥಳೀಯವಾಗಿ ಲಭ್ಯವಿರುವ ಆರೋಗ್ಯಕರ ಬದಲಿಗಳನ್ನು ಸೂಚಿಸಲಾಗಿದೆಯೇ?',
+      'status_type': 'checkbox',
+      'display_order': 32,
+    },
+
+    // Feeding Practices & Interaction Category
+    {
+      'key': 'attentive_feeding',
+      'category': 'ಆಹಾರ ಆಚರಣೆ ಮತ್ತು ಸಂವಹನ',
+      'description': 'ಗಮನವಿಟ್ಟು ಮತ್ತು ಸಹನಶೀಲವಾಗಿ ಆಹಾರ ನೀಡಲು ಪ್ರೋತ್ಸಾಹಿಸಲಾಗಿದೆಯೇ?',
+      'status_type': 'checkbox',
+      'display_order': 40,
     },
     {
-      'key': 'kn_counsel_q10',
-      'text': 'ಸರಿಯಾದ ತಯಾರಿಕೆಯನ್ನು ವಿವರಿಸಲಾಗಿದೆಯೇ?',
-      'type': 'single_choice',
-      'is_required': true,
-      'options': ['ಹೌದು', 'ಇಲ್ಲ'],
+      'key': 'talk_during_feeding',
+      'category': 'ಆಹಾರ ಆಚರಣೆ ಮತ್ತು ಸಂವಹನ',
+      'description': 'ಆಹಾರ ನೀಡುವ ವೇಳೆ ಮಗುವಿನೊಂದಿಗೆ ಮಾತನಾಡಲು / ಹಾಡಲು ಸಲಹೆ ನೀಡಲಾಗಿದೆಯೇ?',
+      'status_type': 'checkbox',
+      'display_order': 41,
     },
     {
-      'key': 'kn_counsel_q11',
-      'text': 'ಪ್ರತಿ ಫೀಡ್‌ಗೆ ನೀಡುವ ಪ್ರಮಾಣವನ್ನು ಚರ್ಚಿಸಲಾಗಿದೆಯೇ?',
-      'type': 'single_choice',
-      'is_required': true,
-      'options': ['ಹೌದು', 'ಇಲ್ಲ'],
-    },
-    {
-      'key': 'kn_counsel_q12',
-      'text': 'ಮಗುವಿಗೆ ಮಾತ್ರ ಬಳಸುವಂತೆ ಒತ್ತು ನೀಡಲಾಗಿದೆಯೇ?',
-      'type': 'single_choice',
-      'is_required': true,
-      'options': ['ಹೌದು', 'ಇಲ್ಲ'],
-    },
-    {
-      'key': 'kn_counsel_q13',
-      'text': 'ಜಂಕ್ ಫುಡ್‌ನ ಹಾನಿಗಳನ್ನು ವಿವರಿಸಲಾಗಿದೆಯೇ?',
-      'type': 'single_choice',
-      'is_required': true,
-      'options': ['ಹೌದು', 'ಇಲ್ಲ'],
-    },
-    {
-      'key': 'kn_counsel_q14',
-      'text': 'ಮಗು ಸೇವಿಸುವ ಜಂಕ್ ಫುಡ್‌ಗಳನ್ನು ಗುರುತಿಸಲಾಗಿದೆಯೇ?',
-      'type': 'single_choice',
-      'is_required': true,
-      'options': ['ಹೌದು', 'ಇಲ್ಲ'],
-    },
-    {
-      'key': 'kn_counsel_q15',
-      'text': 'ಸ್ಥಳೀಯವಾಗಿ ಲಭ್ಯವಿರುವ ಆರೋಗ್ಯಕರ ಬದಲಿಗಳನ್ನು ಸೂಚಿಸಲಾಗಿದೆಯೇ?',
-      'type': 'single_choice',
-      'is_required': true,
-      'options': ['ಹೌದು', 'ಇಲ್ಲ'],
-    },
-    {
-      'key': 'kn_counsel_q16',
-      'text': 'ಗಮನವಿಟ್ಟು ಮತ್ತು ಸಹನಶೀಲವಾಗಿ ಆಹಾರ ನೀಡಲು ಪ್ರೋತ್ಸಾಹಿಸಲಾಗಿದೆಯೇ?',
-      'type': 'single_choice',
-      'is_required': true,
-      'options': ['ಹೌದು', 'ಇಲ್ಲ'],
-    },
-    {
-      'key': 'kn_counsel_q17',
-      'text': 'ಆಹಾರ ನೀಡುವ ವೇಳೆ ಮಗುವಿನೊಂದಿಗೆ ಮಾತನಾಡಲು / ಹಾಡಲು ಸಲಹೆ ನೀಡಲಾಗಿದೆಯೇ?',
-      'type': 'single_choice',
-      'is_required': true,
-      'options': ['ಹೌದು', 'ಇಲ್ಲ'],
-    },
-    {
-      'key': 'kn_counsel_q18',
-      'text': 'ದೈನಂದಿನ ಆಟ ಮತ್ತು ಸಂವಹನವನ್ನು ಪ್ರೋತ್ಸಾಹಿಸಲಾಗಿದೆಯೇ?',
-      'type': 'single_choice',
-      'is_required': true,
-      'options': ['ಹೌದು', 'ಇಲ್ಲ'],
-    },
-    {
-      'key': 'kn_counsel_q19',
-      'text': 'ಸಮಾಲೋಚನೆ ಅವಧಿ:',
-      'type': 'single_choice',
-      'is_required': true,
-      'options': ['5 ನಿಮಿಷಕ್ಕಿಂತ ಕಡಿಮೆ', '5–10 ನಿಮಿಷ'],
-    },
-    {
-      'key': 'kn_counsel_q20',
-      'text': 'ಕ್ಷೇತ್ರ ಸಿಬ್ಬಂದಿಯ ಹೆಸರು:',
-      'type': 'text',
-      'is_required': true,
+      'key': 'daily_play_interaction',
+      'category': 'ಆಹಾರ ಆಚರಣೆ ಮತ್ತು ಸಂವಹನ',
+      'description': 'ದೈನಂದಿನ ಆಟ ಮತ್ತು ಸಂವಹನವನ್ನು ಪ್ರೋತ್ಸಾಹಿಸಲಾಗಿದೆಯೇ?',
+      'status_type': 'checkbox',
+      'display_order': 42,
     },
   ];
 
   Future<void> seedCounselling() async {
+    print('🌱 CounsellingSeeder: start (projectDocId=$projectDocId)');
+
     int displayOrder = 1;
-
-    print("🌱 CounsellingSeeder: start (projectDocId=$projectDocId)");
-
-    for (final q in counsellingQuestions) {
-      final questionId = await _upsertQuestion(q);
-      await _upsertOptions(questionId, q);
-      await _upsertProjectLink(questionId, q, displayOrder: displayOrder++);
+    for (var item in counsellingItems) {
+      await _upsertCounsellingItem(item, displayOrder: displayOrder);
+      displayOrder++;
     }
 
-    print("CounsellingSeeder: done");
+    print('CounsellingSeeder: done');
   }
 
-  Future<String> _upsertQuestion(Map<String, dynamic> q) async {
-    final key = q['key'] as String;
-
-    final existing = await aw.list(
-      collectionId: Constants.colQuestions,
-      queries: [Query.equal('question_key', key), Query.limit(1)],
-    );
-
-    if (existing.documents.isNotEmpty) {
-      return existing.documents.first.$id;
-    }
-
-    final created = await aw.create(
-      collectionId: Constants.colQuestions,
-      permissions: _perms,
-      data: {
-        'question_key': key,
-        'question_text': q['text'],
-        'answer_type': q['type'],
-        'is_anthropometric': q['is_anthropometric'] ?? false,
-        'is_active': true,
-      },
-    );
-
-    return created.$id;
-  }
-
-  Future<void> _upsertOptions(String questionId, Map<String, dynamic> q) async {
-    final opts = (q['options'] as List?)?.cast<String>() ?? const <String>[];
-    if (opts.isEmpty) return;
-
-    final qKey = q['key'] as String;
-
-    for (int i = 0; i < opts.length; i++) {
-      final label = opts[i].trim();
-      final value = '${qKey}_opt_${i + 1}';
-
-      final existing = await aw.list(
-        collectionId: Constants.colQuestionOptions,
-        queries: [
-          Query.equal('question', questionId),
-          Query.equal('option_value', value),
-          Query.limit(1),
-        ],
-      );
-
-      if (existing.documents.isNotEmpty) continue;
-
-      await aw.create(
-        collectionId: Constants.colQuestionOptions,
-        permissions: _perms,
-        data: {
-          'question': questionId,
-          'option_value': value,
-          'option_label': label,
-          'display_order': i + 1,
-        },
-      );
-    }
-  }
-
-  Future<void> _upsertProjectLink(
-    String questionId,
-    Map<String, dynamic> q, {
+  Future<void> _upsertCounsellingItem(
+    Map<String, dynamic> item, {
     required int displayOrder,
   }) async {
-    final phase = Constants.phaseCounselling;
+    final key = item['key'] as String;
 
+    // Check if counselling item already exists
     final existing = await aw.list(
-      collectionId: Constants.colProjectQuestions,
+      collectionId: Constants.colCounsellingItems,
       queries: [
+        Query.equal('key', key),
         Query.equal('project', projectDocId),
-        Query.equal('question', questionId),
-        Query.equal('phase', phase),
         Query.limit(1),
       ],
     );
 
-    if (existing.documents.isNotEmpty) return;
+    Map<String, dynamic> itemData = {
+      'key': key,
+      'project': projectDocId,
+      'category': item['category'] ?? '',
+      'description': item['description'] ?? '',
+      'status_type': item['status_type'] ?? 'checkbox',
+      'display_order': displayOrder,
+      'created_at': DateTime.now().toIso8601String(),
+      'updated_at': DateTime.now().toIso8601String(),
+    };
 
-    await aw.create(
-      collectionId: Constants.colProjectQuestions,
-      permissions: _perms,
-      data: {
-        'project': projectDocId,
-        'question': questionId,
-        'phase': phase,
-        'display_order': displayOrder,
-        'is_required': q['is_required'] ?? true,
-      },
-    );
+    // Add options if they exist
+    if (item['options'] != null) {
+      itemData['options'] = item['options'];
+    }
+
+    if (existing.documents.isNotEmpty) {
+      // Update existing
+      await aw.update(
+        collectionId: Constants.colCounsellingItems,
+        documentId: existing.documents.first.$id,
+        data: itemData,
+        permissions: _perms,
+      );
+      print('Updated counselling item: $key');
+    } else {
+      // Create new
+      await aw.create(
+        collectionId: Constants.colCounsellingItems,
+        documentId: ID.unique(),
+        data: itemData,
+        permissions: _perms,
+      );
+      print('Created counselling item: $key');
+    }
   }
 }

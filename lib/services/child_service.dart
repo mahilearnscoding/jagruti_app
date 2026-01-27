@@ -104,22 +104,9 @@ class ChildService {
     // save locally
     box.put(childId, data);
 
-    //enqueue sync job
-    SyncQueueService.I.enqueue({
-      'type': jobCreateChild,
-      'childId': childId,
-      'data': {
-        'project': projectId,
-        'name': name,
-        'gender': gender,
-        'date_of_birth': dob.toIso8601String(),
-        'guardian_name': guardianName,
-        'guardian_contact': guardianContact,
-        'baselineStatus': 'draft',
-        'counsellingStatus': 'pending',
-        'endlineStatus': 'pending',
-      },
-    });
+    // NOTE: Do NOT queue sync job here!
+    // Child should only be synced to server AFTER baseline is submitted
+    // The sync will be queued in markBaselineSubmittedLocal() instead
 
     return childId;
   }
@@ -137,6 +124,24 @@ class ChildService {
       c['baselineVisitId'] = visitId;
       c['synced'] = false;
       box.put(childId, c);
+      
+      // NOW queue child for sync to server (only after baseline is submitted)
+      SyncQueueService.I.enqueue({
+        'type': jobCreateChild,
+        'childId': childId,
+        'data': {
+          'project': c['project'],
+          'name': c['name'],
+          'gender': c['gender'],
+          'date_of_birth': c['date_of_birth'],
+          'guardian_name': c['guardian_name'],
+          'guardian_contact': c['guardian_contact'],
+          'baselineStatus': 'submitted',
+          'counsellingStatus': 'pending',
+          'endlineStatus': 'pending',
+          'createdAt': c['createdAt'],
+        },
+      });
     }
  
     SyncQueueService.I.enqueue({

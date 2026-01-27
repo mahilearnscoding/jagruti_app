@@ -1,5 +1,6 @@
 import 'package:appwrite/appwrite.dart';
 import '../utils/constants.dart';
+import 'appwrite_service.dart';
 
 class AuthService {
   final Client client = Client()
@@ -17,44 +18,15 @@ class AuthService {
     await Future.delayed(const Duration(seconds: 1));
   }
 
-  // FAKE VERIFY OTP (Creates a proper user session for seeding)
+  // FAKE VERIFY OTP (Uses existing seeder session)
   Future<void> verifyOtp(String otp) async {
     try {
-      // For development: create a temporary user with phone number that has write permissions
-      final userId = 'phone_${DateTime.now().millisecondsSinceEpoch}';
-      
-      // Create user account programmatically
-      await account.create(
-        userId: userId,
-        email: '$userId@jagruti.dev',
-        password: 'temppass123',
-        name: 'Field Worker',
-      );
-      
-      // Login with created account
-      await account.createEmailPasswordSession(
-        email: '$userId@jagruti.dev',
-        password: 'temppass123',
-      );
-      
-      print("✅ User session created for seeding: $userId");
+      // Don't create a new user - just ensure we have the seeder session
+      await AppwriteService.I.ensureSession();
+      print("✅ Using existing seeder session for database operations");
     } catch (e) {
-      // If creation fails (user might exist), try to login with existing temp account
-      try {
-        await account.createEmailPasswordSession(
-          email: 'seeder@jagruti.dev',
-          password: 'jagruti123',
-        );
-        print("✅ Using existing seeder account");
-      } catch (e2) {
-        // Last resort: anonymous (limited permissions)
-        try {
-          await account.createAnonymousSession();
-          print("⚠️ Using anonymous session (seeding may fail)");
-        } catch (e3) {
-          print("Already logged in or error: $e3");
-        }
-      }
+      print("❌ Failed to maintain seeder session: $e");
+      throw Exception('Authentication failed');
     }
   }
 

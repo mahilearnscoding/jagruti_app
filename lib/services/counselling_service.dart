@@ -1,4 +1,6 @@
 import 'package:appwrite/appwrite.dart';
+import 'package:hive/hive.dart';
+import 'package:uuid/uuid.dart';
 import '../utils/constants.dart';
 import 'appwrite_service.dart';
 
@@ -81,26 +83,26 @@ class CounsellingService {
     required String fieldWorkerId,
     required String projectId,
   }) async {
-    final aw = AppwriteService.I;
-    await aw.ensureSession();
-
+    // Use local-first approach like child service
+    final visitId = const Uuid().v4();
+    final box = Hive.box('counselling_visits_local');
+    
     final visitData = {
+      'id': visitId,
       'child': childId,
       'field_worker': fieldWorkerId,
-      // 'project': projectId, // Commented out - causing unknown attribute error
+      'project': projectId,
       'visit_date': DateTime.now().toIso8601String(),
       'status': 'in_progress',
-      'created_at': DateTime.now().toIso8601String(),
-      'updated_at': DateTime.now().toIso8601String(),
+      'synced': false,
+      'createdAt': DateTime.now().toIso8601String(),
     };
-
-    final doc = await aw.create(
-      collectionId: Constants.colCounsellingVisits,
-      documentId: ID.unique(),
-      data: visitData,
-    );
-
-    return doc.$id;
+    
+    // Save locally first
+    box.put(visitId, visitData);
+    print('✅ Created counselling visit locally: $visitId');
+    
+    return visitId;
   }
 
   Future<void> saveCounsellingResponse({
@@ -109,58 +111,54 @@ class CounsellingService {
     required String status,
     String? comments,
   }) async {
-    final aw = AppwriteService.I;
-    await aw.ensureSession();
+    // Use local-first approach
+    final box = Hive.box('counselling_responses_local');
+    final responseId = '${visitId}_$itemId'; // Composite key
+
+    // Map user responses to database enum values
+    String dbStatus;
+    switch (status) {
+      case 'ಹೌದು': // Yes
+        dbStatus = 'already_followed';
+        break;
+      case 'ಇಲ್ಲ': // No  
+        dbStatus = 'advised';
+        break;
+      case 'ಅನ್ವಯವಾಗುವುದಿಲ್ಲ': // Not applicable
+        dbStatus = 'not_applicable';
+        break;
+      default:
+        dbStatus = 'advised'; // Default fallback
+    }
 
     final responseData = {
-      'visit': visitId,
-      'item': itemId,
-      'status': status,
+      'id': responseId,
+      'counsellin_visit': visitId,
+      'counselling_item': itemId,
+      'status': dbStatus,
       'comments': comments ?? '',
-      'created_at': DateTime.now().toIso8601String(),
-      'updated_at': DateTime.now().toIso8601String(),
+      'synced': false,
+      'createdAt': DateTime.now().toIso8601String(),
     };
 
-    // Check if response already exists
-    final existing = await aw.list(
-      collectionId: Constants.colCounsellingResponses,
-      queries: [
-        Query.equal('visit', visitId),
-        Query.equal('item', itemId),
-        Query.limit(1),
-      ],
-    );
-
-    if (existing.documents.isNotEmpty) {
-      // Update existing response
-      await aw.update(
-        collectionId: Constants.colCounsellingResponses,
-        documentId: existing.documents.first.$id,
-        data: responseData,
-      );
-    } else {
-      // Create new response
-      await aw.create(
-        collectionId: Constants.colCounsellingResponses,
-        documentId: ID.unique(),
-        data: responseData,
-      );
-    }
+    // Save or update locally
+    box.put(responseId, responseData);
+    print('✅ Saved counselling response locally: $responseId');
   }
 
   Future<void> completeCounsellingVisit(String visitId) async {
-    final aw = AppwriteService.I;
-    await aw.ensureSession();
-
-    await aw.update(
-      collectionId: Constants.colCounsellingVisits,
-      documentId: visitId,
-      data: {
-        'status': 'completed',
-        'completed_at': DateTime.now().toIso8601String(),
-        'updated_at': DateTime.now().toIso8601String(),
-      },
-    );
+    // Use local-first approach
+    final box = Hive.box('counselling_visits_local');
+    final existing = box.get(visitId);
+    if (existing != null) {
+      final updated = Map<String, dynamic>.from(existing);
+      updated['status'] = 'completed';
+      updated['notes'] = 'Counselling visit completed';
+      updated['completed_at'] = DateTime.now().toIso8601String();
+      updated['synced'] = false;
+      box.put(visitId, updated);
+    }
+    print('✅ Counselling visit completed locally: $visitId');
   }
 
   Future<bool> isCounsellingCompleted({
@@ -175,8 +173,6 @@ class CounsellingService {
         collectionId: Constants.colCounsellingVisits,
         queries: [
           Query.equal('child', childId),
-          // Query.equal('project', projectId), // Commented out - causing unknown attribute error
-          Query.equal('status', 'completed'),
           Query.limit(1),
         ],
       );
@@ -195,14 +191,14 @@ class CounsellingService {
     final responsesRes = await aw.list(
       collectionId: Constants.colCounsellingResponses,
       queries: [
-        Query.equal('visit', visitId),
+        Query.equal('counsellin_visit', visitId),
       ],
     );
 
     Map<String, String> responses = {};
     for (var doc in responsesRes.documents) {
       final itemId = aw.relId(doc.data['counselling_item']);
-      responses[itemId] = doc.data['response']?.toString() ?? '';
+      responses[itemId] = doc.data['status']?.toString() ?? '';  // Use 'status' field
     }
 
     return responses;

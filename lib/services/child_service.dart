@@ -70,6 +70,30 @@ class ChildService {
     return merged;
   }
 
+  /// Get a specific child by ID (local-first)
+  Future<Map<String, dynamic>?> getChildById(String childId) async {
+    final localBox = Hive.box('children_local');
+    
+    // 1) Check local first
+    final localChild = localBox.get(childId);
+    if (localChild != null) {
+      return Map<String, dynamic>.from(localChild);
+    }
+
+    // 2) Try server if not found locally
+    try {
+      await AppwriteService.I.ensureSession();
+      final doc = await AppwriteService.I.get(
+        collectionId: Constants.colChildren,
+        documentId: childId,
+      );
+      return {'id': doc.$id, ...doc.data};
+    } catch (e) {
+      print('Error getting child from server: $e');
+      return null;
+    }
+  }
+
   /// Local-first create child (offline-safe)
   /// Returns childId immediately (UUID).
   Future<String> createChildLocal({

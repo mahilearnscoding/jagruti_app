@@ -5,6 +5,7 @@ import 'package:appwrite/appwrite.dart';
 import 'services/appwrite_service.dart';
 import 'utils/constants.dart';
 import 'utils/kannada_baseline_seeder.dart';
+import 'models/baseline_seeder.dart';
 import 'models/counselling_seeder.dart';
 import 'models/endline_seeder.dart';
 import 'screens/splash/splash_screen.dart';
@@ -45,6 +46,8 @@ Future<void> main() async {
   await Hive.openBox('visits_local');
   await Hive.openBox('visit_answers_local');
   await Hive.openBox('sync_queue');
+  await Hive.openBox('counselling_visits_local');
+  await Hive.openBox('counselling_responses_local');
 
   AppwriteService.I.init();
 
@@ -60,21 +63,14 @@ Future<void> main() async {
   // Don't block app launch on seeding
   runApp(const JagrutiApp());
 
-  // SKIP SEEDING - MANUAL DATABASE POPULATION NEEDED
-  print("📝 Seeding skipped - populate database manually");
-  
-  /*
+  // TEMPORARILY DISABLED SEEDING - WILL FIX AFTER DEMO
   // Seed in background; if it fails, log and continue
+  /*
   try {
     const projectDocId = "6970934c003c641b26dc";
     
-    // Seed baseline questions
-    final baselineSeeder = KannadaBaselineSeeder(
-      aw: AppwriteService.I,
-      projectDocId: projectDocId,
-    );
-    await baselineSeeder.seedBaseline();
-    print("✅ Baseline questions seeded");
+    // Skip baseline seeding - Kannada questions already exist in database
+    print("📝 Skipping baseline seeding - using existing Kannada questions");
     
     // Seed counselling questions
     final counsellingSeeder = CounsellingSeeder(

@@ -67,6 +67,16 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
   //check if counselling is completed
   bool get _counsellingComplete => _childData['counsellingStatus'] == 'submitted';
 
+  // Get child's photo from baseline visit
+  String? get _childPhotoUrl {
+    final baselineVisitId = _childData['baselineVisitId'];
+    if (baselineVisitId != null) {
+      final visitData = VisitService.I.getVisitLocationData(baselineVisitId);
+      return visitData?['photo_url']?.isNotEmpty == true ? visitData!['photo_url'] : null;
+    }
+    return null;
+  }
+
   // Endline is enabled after counselling completion (baseline is already done)
   bool get _endlineEnabled => _counsellingComplete;
 
@@ -204,14 +214,19 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                       CircleAvatar(
                         radius: 40,
                         backgroundColor: teal,
-                        child: Text(
-                          (widget.childName[0]).toUpperCase(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        backgroundImage: _childPhotoUrl != null 
+                          ? NetworkImage(_childPhotoUrl!) 
+                          : null,
+                        child: _childPhotoUrl == null 
+                          ? Text(
+                              (widget.childName[0]).toUpperCase(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            )
+                          : null,
                       ),
                       const SizedBox(width: 16),
                       Expanded(
@@ -255,86 +270,40 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
 
             // Phase Status Section
             Text(
-              'Remaining Assessment Phases',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 12),
-
-            // Note about baseline completion
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.green.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.green.shade300),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.green, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Baseline assessment completed',
-                    style: TextStyle(
-                      color: Colors.green.shade700,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Counselling Status
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade300),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  _statusBadge('Counselling', _counsellingComplete),
-                  const SizedBox(width: 8),
-                  if (_counsellingComplete)
-                    const Icon(Icons.check_circle, color: Colors.green, size: 20),
-                ],
+              'Assessment Progress',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 12),
 
-            // Endline Status
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: _endlineEnabled ? Colors.grey.shade300 : Colors.grey.shade200,
-                ),
-                borderRadius: BorderRadius.circular(8),
-                color: !_endlineEnabled ? Colors.grey.shade50 : null,
-              ),
-              child: Row(
-                children: [
-                  Opacity(
-                    opacity: _endlineEnabled ? 1.0 : 0.5,
-                    child: _statusBadge(
-                      'Endline',
-                      _childData['endlineStatus'] == 'submitted',
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  if (_childData['endlineStatus'] == 'submitted')
-                    const Icon(Icons.check_circle, color: Colors.green, size: 20),
-                  if (!_endlineEnabled && _childData['endlineStatus'] != 'submitted')
-                    Tooltip(
-                      message: 'Counselling must be completed first',
-                      child: Icon(
-                        Icons.lock,
-                        color: Colors.grey.shade400,
-                        size: 20,
-                      ),
-                    ),
-                ],
-              ),
+            // Clean Progress Cards
+            _buildProgressCard(
+              title: 'Baseline Assessment',
+              subtitle: 'Child enrollment and initial assessment',
+              isCompleted: true,
+              icon: Icons.assignment_turned_in,
+              color: Colors.green,
+            ),
+            const SizedBox(height: 8),
+
+            _buildProgressCard(
+              title: 'Counselling Session',
+              subtitle: 'Nutrition and feeding guidance',
+              isCompleted: _counsellingComplete,
+              icon: Icons.chat_bubble_outline,
+              color: _counsellingComplete ? Colors.green : teal,
+            ),
+            const SizedBox(height: 8),
+
+            _buildProgressCard(
+              title: 'Endline Assessment', 
+              subtitle: 'Final evaluation and progress review',
+              isCompleted: _childData['endlineStatus'] == 'submitted',
+              icon: Icons.assignment,
+              color: _childData['endlineStatus'] == 'submitted' ? Colors.green : 
+                     _endlineEnabled ? teal : Colors.grey,
+              isEnabled: _endlineEnabled,
             ),
             const SizedBox(height: 24),
 
@@ -460,6 +429,79 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
               fontSize: 14,
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProgressCard({
+    required String title,
+    required String subtitle,
+    required bool isCompleted,
+    required IconData icon,
+    required Color color,
+    bool isEnabled = true,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isCompleted ? color.withOpacity(0.1) : Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isCompleted ? color : Colors.grey.shade300,
+          width: isCompleted ? 2 : 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: isCompleted ? color : Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              isCompleted ? Icons.check : icon,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: isEnabled ? Colors.black87 : Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: isEnabled ? Colors.grey.shade600 : Colors.grey.shade400,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (isCompleted)
+            Icon(
+              Icons.check_circle,
+              color: color,
+              size: 24,
+            )
+          else if (!isEnabled)
+            Icon(
+              Icons.lock_outline,
+              color: Colors.grey.shade400,
+              size: 24,
+            ),
         ],
       ),
     );

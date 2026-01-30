@@ -3,6 +3,8 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../../services/counselling_service.dart';
 import '../../services/local_storage_service.dart';
 import '../../services/sync_manager.dart';
+import '../../services/location_service.dart';
+import '../../services/camera_service.dart';
 
 class CounsellingScreen extends StatefulWidget {
   final String projectId;
@@ -28,6 +30,13 @@ class _CounsellingScreenState extends State<CounsellingScreen> {
   bool _isSubmitting = false;
   String? _visitId;
   Map<String, List<CounsellingItem>> _itemsByCategory = {};
+  
+  // Location and Photo state
+  bool _hasLocation = false;
+  bool _hasPhoto = false;
+  bool _isCapturingLocation = false;
+  bool _isCapturingPhoto = false;
+  String? _photoUrl;
 
   @override
   void initState() {
@@ -43,25 +52,141 @@ class _CounsellingScreenState extends State<CounsellingScreen> {
     super.dispose();
   }
 
+  Future<void> _captureLocation() async {
+    setState(() => _isCapturingLocation = true);
+    
+    try {
+      final position = await LocationService.I.getCurrentLocation();
+      setState(() {
+        _hasLocation = true;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Location captured: ${position?.latitude.toStringAsFixed(6) ?? '0.0'}, ${position?.longitude.toStringAsFixed(6) ?? '0.0'}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error capturing location: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      setState(() => _isCapturingLocation = false);
+    }
+  }
+
+  Future<void> _capturePhoto() async {
+    setState(() => _isCapturingPhoto = true);
+    
+    try {
+      final result = await CameraService.I.captureGeotaggedPhotoWithLocation();
+      setState(() {
+        _hasPhoto = result['photoUrl'] != null;
+        _photoUrl = result['photoUrl'];
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_hasPhoto ? 'Geotagged photo captured successfully!' : 'Photo capture failed'),
+            backgroundColor: _hasPhoto ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() => _hasPhoto = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Photo capture failed'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      setState(() => _isCapturingPhoto = false);
+    }
+  }
+
   Future<void> _loadCounsellingItems() async {
     try {
       setState(() => _isLoading = true);
 
-      final items = await CounsellingService.I.getCounsellingItems(widget.projectId);
+      List<CounsellingItem> items;
+      
+      try {
+        items = await CounsellingService.I.getCounsellingItems(widget.projectId);
+        print('✅ Loaded ${items.length} counselling items from server');
+      } catch (e) {
+        print('❌ Failed to load from server: $e');
+        // For demo, create some hardcoded items
+        items = [
+          CounsellingItem(
+            itemId: 'demo1',
+            key: 'home_environment',
+            category: 'ಸಾಮಾನ್ಯ',
+            description: 'ಮನೆಯ ಮುಖ್ಯಸ್ಥರ ಹೆಸರು:',
+            statusType: 'checkbox',
+            options: ['ಹೌದು', 'ಇಲ್ಲ'],
+            displayOrder: 1,
+          ),
+          CounsellingItem(
+            itemId: 'demo2',
+            key: 'child_safety', 
+            category: 'ಸಾಮಾನ್ಯ',
+            description: 'ಮಗುವಿನ ಸುರಕ್ಷತೆಯ ಪರಿಸ್ಥಿತಿ',
+            statusType: 'checkbox',
+            options: ['ಹೌದು', 'ಇಲ್ಲ'],
+            displayOrder: 2,
+          ),
+        ];
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Using demo data - database connection failed'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
       
       // Create a visit
       final fwId = LocalStorageService.I.fieldWorkerId ?? 'unknown_worker';
-      final visitId = await CounsellingService.I.createCounsellingVisit(
-        childId: widget.childId,
-        fieldWorkerId: fwId,
-        projectId: widget.projectId,
-      );
+      
+      try {
+        final visitId = await CounsellingService.I.createCounsellingVisit(
+          childId: widget.childId,
+          fieldWorkerId: fwId,
+          projectId: widget.projectId,
+        );
+        _visitId = visitId;
+      } catch (e) {
+        print('❌ Failed to create visit: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to create counselling visit: $e')),
+          );
+          Navigator.pop(context);
+        }
+        return;
+      }
 
       // Initialize controllers for comments
       _commentControllers.clear();
       for (var item in items) {
         _commentControllers[item.itemId] = TextEditingController();
       }
+
+      _items = items;
 
       // Group items by category
       _itemsByCategory.clear();
@@ -74,7 +199,6 @@ class _CounsellingScreenState extends State<CounsellingScreen> {
 
       setState(() {
         _items = items;
-        _visitId = visitId;
         _isLoading = false;
       });
     } catch (e) {
@@ -88,6 +212,27 @@ class _CounsellingScreenState extends State<CounsellingScreen> {
   }
 
   Future<void> _submitCounselling() async {
+    // Check if photo and location are captured
+    if (!_hasPhoto) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please capture a geotagged photo before submitting'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    if (!_hasLocation) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please capture location before submitting'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isSubmitting = true);
 
     try {
@@ -113,8 +258,12 @@ class _CounsellingScreenState extends State<CounsellingScreen> {
       childData['counsellingStatus'] = 'submitted';
       box.put(widget.childId, childData);
 
-      // Try to sync
-      await SyncManager.I.trySync();
+      // Try to sync (don't fail if sync fails)
+      try {
+        await SyncManager.I.trySync();
+      } catch (syncError) {
+        print('⚠️ Sync failed (will retry later): $syncError');
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -246,10 +395,104 @@ class _CounsellingScreenState extends State<CounsellingScreen> {
                         // Display items grouped by category
                         for (var categoryEntry in _itemsByCategory.entries)
                           _buildCategorySection(categoryEntry.key, categoryEntry.value),
+                        
+                        // Location and Photo Capture Section - At the very end of scrollable content
+                        Container(
+                          margin: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: Column(
+                            children: [
+                              Text(
+                                'Required before submission',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  // Location capture button
+                                  Expanded(
+                                    child: Container(
+                                      height: 45,
+                                      margin: const EdgeInsets.only(right: 8),
+                                      child: ElevatedButton.icon(
+                                        onPressed: _isCapturingLocation ? null : _captureLocation,
+                                        icon: _isCapturingLocation
+                                            ? const SizedBox(
+                                                width: 16,
+                                                height: 16,
+                                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                              )
+                                            : Icon(
+                                                _hasLocation ? Icons.check_circle : Icons.location_on,
+                                                size: 18,
+                                                color: Colors.white,
+                                              ),
+                                        label: Text(
+                                          _hasLocation ? 'Located ✓' : 'Location',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: _hasLocation ? Colors.green : Colors.blue,
+                                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  
+                                  // Photo capture button
+                                  Expanded(
+                                    child: Container(
+                                      height: 45,
+                                      margin: const EdgeInsets.only(left: 8),
+                                      child: ElevatedButton.icon(
+                                        onPressed: _isCapturingPhoto ? null : _capturePhoto,
+                                        icon: _isCapturingPhoto
+                                            ? const SizedBox(
+                                                width: 16,
+                                                height: 16,
+                                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                              )
+                                            : Icon(
+                                                _hasPhoto ? Icons.check_circle : Icons.camera_alt,
+                                                size: 18,
+                                                color: Colors.white,
+                                              ),
+                                        label: Text(
+                                          _hasPhoto ? 'Photo ✓' : 'Photo',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: _hasPhoto ? Colors.green : const Color(0xFF26A69A),
+                                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
                 ),
+                
                 Container(
                   padding: const EdgeInsets.all(16),
                   child: SizedBox(

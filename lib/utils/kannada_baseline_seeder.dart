@@ -558,13 +558,19 @@ class KannadaBaselineSeeder {
   ];
 
     Future<void> seedBaseline() async {
-    int displayOrder = 1;
+      print('📝 KannadaBaselineSeeder.seedBaseline - DISABLED (using existing Kannada questions)');
+      return; // Skip seeding - existing Kannada questions in database
+      
+      // Old seeding code below - commented out
+      /*
+      int displayOrder = 1;
 
     for (final q in baselineQuestions) {
       final questionId = await _upsertQuestion(q);
       await _upsertOptions(questionId, q);
       await _upsertProjectLink(questionId, q, displayOrder: displayOrder++);
     }
+    */
   }
 
   Future<String> _upsertQuestion(Map<String, dynamic> q) async {

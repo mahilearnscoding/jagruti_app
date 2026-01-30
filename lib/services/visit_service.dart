@@ -108,4 +108,50 @@ class VisitService {
       visitsBox.put(visitId, v);
     }
   }
+
+  /// Update visit with location and photo data
+  Future<void> updateVisitLocationAndPhoto({
+    required String visitId,
+    required double latitude,
+    required double longitude,
+    required String photoUrl,
+  }) async {
+    final visitsBox = Hive.box('visits_local');
+    final existing = visitsBox.get(visitId);
+    if (existing != null) {
+      final v = Map<String, dynamic>.from(existing);
+      v['latitude'] = latitude;
+      v['longitude'] = longitude;
+      v['photo_url'] = photoUrl;
+      v['location_captured_at'] = DateTime.now().toIso8601String();
+      visitsBox.put(visitId, v);
+
+      // Update the sync queue data as well
+      SyncQueueService.I.enqueue({
+        'type': 'UPDATE_VISIT_LOCATION',
+        'visitId': visitId,
+        'data': {
+          'latitude': latitude,
+          'longitude': longitude,
+          'photo_url': photoUrl,
+        }
+      });
+    }
+  }
+
+  /// Get visit location and photo data
+  Map<String, dynamic>? getVisitLocationData(String visitId) {
+    final visitsBox = Hive.box('visits_local');
+    final visit = visitsBox.get(visitId);
+    if (visit != null) {
+      return {
+        'latitude': visit['latitude'] ?? 0.0,
+        'longitude': visit['longitude'] ?? 0.0,
+        'photo_url': visit['photo_url'] ?? '',
+        'has_location': (visit['latitude'] ?? 0.0) != 0.0 && (visit['longitude'] ?? 0.0) != 0.0,
+        'has_photo': (visit['photo_url'] ?? '').isNotEmpty,
+      };
+    }
+    return null;
+  }
 }

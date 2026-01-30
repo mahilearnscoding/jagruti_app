@@ -167,8 +167,6 @@ class CounsellingSeeder {
       'description': item['description'] ?? '',
       'status_type': item['status_type'] ?? 'checkbox',
       'display_order': displayOrder,
-      'created_at': DateTime.now().toIso8601String(),
-      'updated_at': DateTime.now().toIso8601String(),
     };
 
     // Add options if they exist

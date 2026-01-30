@@ -549,6 +549,9 @@ class KannadaBaselineSeeder {
   ];
 
   Future<void> seedBaseline() async {
+    print('📝 visit.dart KannadaBaselineSeeder.seedBaseline - DISABLED (using existing Kannada questions)');
+    return; // Skip seeding - existing Kannada questions in database
+    
     int displayOrder = 1;
 
     print("🌱 KannadaBaselineSeeder: start (projectDocId=$projectDocId)");
